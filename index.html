@@ -3,34 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
-  <title>VR IN — AR Выставка v1778445337</title>
+  <meta http-equiv="Cache-Control" content="no-cache">
+  <title>VR IN — AR Выставка</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #000; color: #fff; font-family: monospace; }
-    #debug {
-      position: fixed; top: 0; left: 0; right: 0;
-      padding: 1rem; background: rgba(0,0,0,0.85);
-      font-size: 11px; line-height: 1.4;
-      z-index: 1000; max-height: 70vh; overflow-y: auto;
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    body { background: #000; color: #fff; font-family: sans-serif; }
+
+    #status {
+      position: fixed; bottom: 1rem; left: 50%;
+      transform: translateX(-50%);
+      padding: 0.5rem 1rem;
+      background: rgba(0,0,0,0.6);
+      border-radius: 999px;
+      font-size: 13px;
+      z-index: 100;
+      pointer-events: none;
+      transition: opacity 0.3s;
     }
-    .log-info { color: #8f8; }
-    .log-error { color: #f88; font-weight: bold; }
-    .log-warn { color: #fc8; }
+    #status.found { background: rgba(0,150,0,0.7); }
   </style>
 </head>
 <body>
 
-  <div id="debug">
-    <div class="log-info">[init] v1778445337</div>
-  </div>
+  <div id="status">Загрузка...</div>
 
   <script>
     const WEBHOOK = "https://webhook.site/a575bd48-e6c5-4c14-ae23-b1fcd71f458b";
     const SESSION = Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
-    const debugEl = document.getElementById("debug");
 
     function sendToServer(msg, type) {
       try {
@@ -42,26 +42,30 @@
     }
 
     function log(msg, type) {
-      const div = document.createElement("div");
-      div.className = "log-" + (type || "info");
-      div.textContent = "[" + new Date().toISOString().substr(11,12) + "] " + msg;
-      debugEl.appendChild(div);
       console.log(msg);
       sendToServer(msg, type);
     }
 
+    function setStatus(text, found) {
+      const el = document.getElementById("status");
+      el.textContent = text;
+      el.classList.toggle("found", !!found);
+    }
+
     window.addEventListener("error", (e) => {
       log("WIN ERR: " + e.message + " @ " + (e.filename||"?").split("/").pop() + ":" + e.lineno, "error");
+      setStatus("Ошибка: " + e.message);
     });
     window.addEventListener("unhandledrejection", (e) => {
       const r = e.reason;
       log("REJECT: " + (r?.message || String(r)) + " | " + (r?.stack || "").substring(0, 250), "error");
+      setStatus("Ошибка: " + (r?.message || "promise rejected"));
     });
 
     window.__log = log;
-    log("[boot] v1778445337 session=" + SESSION);
+    window.__setStatus = setStatus;
+    log("[boot] v1778445633 session=" + SESSION);
     log("[boot] ua=" + navigator.userAgent.substring(0, 100));
-    log("[boot] secureContext=" + window.isSecureContext);
   </script>
 
   <script type="importmap">
@@ -74,11 +78,11 @@
   }
   </script>
 
-  <script src="config.js?v=1778445337"
+  <script src="config.js?v=1778445633"
     onload="window.__log('[load] config.js OK')"
     onerror="window.__log('[load] config.js FAILED', 'error')"></script>
 
-  <script type="module" src="app.js?v=1778445337"></script>
+  <script type="module" src="app.js?v=1778445633"></script>
 
 </body>
 </html>
