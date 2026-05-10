@@ -34,7 +34,6 @@
         const data = JSON.stringify({ s: SESSION, t: new Date().toISOString(), type: type || "info", msg: msg });
         const blob = new Blob([data], { type: "text/plain" });
         if (navigator.sendBeacon) navigator.sendBeacon(WEBHOOK, blob);
-        else fetch(WEBHOOK, { method: "POST", body: blob, mode: "no-cors", keepalive: true }).catch(()=>{});
       } catch(e) {}
     }
 
@@ -57,40 +56,26 @@
 
     window.__log = log;
     log("[boot] session=" + SESSION);
-    log("[boot] secure=" + window.isSecureContext + " getUserMedia=" + !!(navigator.mediaDevices?.getUserMedia));
+    log("[boot] ua=" + navigator.userAgent.substring(0, 80));
+    log("[boot] secureContext=" + window.isSecureContext);
   </script>
 
-  <!-- Используем UMD-версии вместо ES modules -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.130.1/build/three.min.js"
-    crossorigin="anonymous"
-    onload="window.__log('[load] three.js OK, THREE=' + typeof window.THREE)"
-    onerror="window.__log('[load] three.js FAILED', 'error')"></script>
-
-  <script src="https://cdn.jsdelivr.net/npm/three@0.130.1/examples/js/loaders/GLTFLoader.js"
-    crossorigin="anonymous"
-    onload="window.__log('[load] GLTFLoader OK, available=' + (typeof window.THREE?.GLTFLoader))"
-    onerror="window.__log('[load] GLTFLoader FAILED', 'error')"></script>
-
-  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image-three.prod.js"
-    crossorigin="anonymous"
-    onload="window.__log('[load] mind-ar 1.1.5 OK, MINDAR=' + typeof window.MINDAR)"
-    onerror="window.__log('[load] mind-ar FAILED', 'error')"></script>
+  <!-- ES modules importmap для MindAR 1.2.x -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+      "mindar-image-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"
+    }
+  }
+  </script>
 
   <script src="config.js"
     onload="window.__log('[load] config.js OK')"
     onerror="window.__log('[load] config.js FAILED', 'error')"></script>
 
-  <script>
-    window.__log("[check] MINDAR=" + (typeof window.MINDAR));
-    if (window.MINDAR) window.__log("[check] MINDAR.IMAGE=" + typeof window.MINDAR.IMAGE);
-    window.__log("[check] THREE=" + typeof window.THREE);
-    window.__log("[check] THREE.GLTFLoader=" + (window.THREE && typeof window.THREE.GLTFLoader));
-    window.__log("[check] EXHIBITION_CONFIG=" + (typeof EXHIBITION_CONFIG) + (typeof EXHIBITION_CONFIG !== "undefined" ? ", " + EXHIBITION_CONFIG.artworks.length + " artworks" : ""));
-  </script>
-
-  <script src="app.js"
-    onload="window.__log('[load] app.js OK')"
-    onerror="window.__log('[load] app.js FAILED', 'error')"></script>
+  <script type="module" src="app.js"></script>
 
 </body>
 </html>
