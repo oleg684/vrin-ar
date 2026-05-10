@@ -6,42 +6,63 @@
   <title>VR IN — AR Выставка</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #000; color: #fff; font-family: sans-serif; }
-    #loading {
-      position: fixed; inset: 0;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      background: #000; z-index: 100;
+    body { background: #000; color: #fff; font-family: monospace; }
+    #debug {
+      position: fixed; top: 0; left: 0; right: 0;
+      padding: 1rem; background: rgba(0,0,0,0.85);
+      font-size: 12px; line-height: 1.5;
+      z-index: 1000; max-height: 60vh; overflow-y: auto;
     }
-    #loading p { margin-top: 1rem; font-size: 14px; opacity: 0.7; }
-    .spinner {
-      width: 40px; height: 40px;
-      border: 3px solid rgba(255,255,255,0.2);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    #hint {
-      position: fixed; bottom: 2rem; left: 0; right: 0;
-      text-align: center; font-size: 14px;
-      opacity: 0.7; z-index: 10; pointer-events: none;
-      display: none;
-    }
+    .log-info { color: #8f8; }
+    .log-error { color: #f88; font-weight: bold; }
+    .log-warn { color: #fc8; }
   </style>
 </head>
 <body>
 
-  <div id="loading">
-    <div class="spinner"></div>
-    <p id="loading-text">Загрузка AR...</p>
+  <div id="debug">
+    <div class="log-info">[init] page loaded</div>
   </div>
 
-  <div id="hint">Наведите камеру на картину</div>
+  <script>
+    // Глобальный перехват всех ошибок
+    const debugEl = document.getElementById("debug");
+    function log(msg, type) {
+      const div = document.createElement("div");
+      div.className = "log-" + (type || "info");
+      div.textContent = "[" + new Date().toISOString().substr(11,8) + "] " + msg;
+      debugEl.appendChild(div);
+      console.log(msg);
+    }
+    window.addEventListener("error", (e) => {
+      log("ERROR: " + e.message + " at " + e.filename + ":" + e.lineno, "error");
+    });
+    window.addEventListener("unhandledrejection", (e) => {
+      log("PROMISE REJECTED: " + (e.reason?.message || e.reason), "error");
+    });
+    window.__log = log;
+  </script>
 
-  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"></script>
-  <script src="config.js"></script>
-  <script src="app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"
+    onload="window.__log('[load] mind-ar.js loaded')"
+    onerror="window.__log('[load] mind-ar.js FAILED', 'error')"></script>
+
+  <script src="config.js"
+    onload="window.__log('[load] config.js loaded')"
+    onerror="window.__log('[load] config.js FAILED', 'error')"></script>
+
+  <script>
+    window.__log("[check] window.MINDAR exists: " + (typeof window.MINDAR !== "undefined"));
+    window.__log("[check] window.THREE exists: " + (typeof window.THREE !== "undefined"));
+    if (window.MINDAR) {
+      window.__log("[check] MINDAR.IMAGE exists: " + (typeof window.MINDAR.IMAGE !== "undefined"));
+    }
+    window.__log("[check] EXHIBITION_CONFIG: " + (typeof EXHIBITION_CONFIG !== "undefined" ? "found, " + EXHIBITION_CONFIG.artworks.length + " artworks" : "MISSING"));
+  </script>
+
+  <script src="app.js"
+    onload="window.__log('[load] app.js loaded')"
+    onerror="window.__log('[load] app.js FAILED', 'error')"></script>
 
 </body>
 </html>
