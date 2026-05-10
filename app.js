@@ -3,57 +3,70 @@
 
 (async () => {
   const loading = document.getElementById("loading");
+  const loadingText = document.getElementById("loading-text");
+  const hint = document.getElementById("hint");
 
-  const targets = EXHIBITION_CONFIG.artworks.map(a => a.target);
+  try {
+    loadingText.textContent = "Инициализация камеры...";
 
-  const mindarThree = new window.MINDAR.IMAGE.MindARThree({
-    container: document.body,
-    imageTargetSrc: "assets/targets/targets.mind",
-    maxTrack: EXHIBITION_CONFIG.artworks.length
-  });
+    const THREE = window.THREE;
+    const { MindARThree } = window.MINDAR.IMAGE;
 
-  const { renderer, scene, camera } = mindarThree;
-  const loader = new THREE.GLTFLoader();
+    const mindarThree = new MindARThree({
+      container: document.body,
+      imageTargetSrc: "assets/targets/targets.mind",
+      maxTrack: EXHIBITION_CONFIG.artworks.length
+    });
 
-  const loadModel = (url) => new Promise((resolve, reject) => {
-    loader.load(url, (gltf) => resolve(gltf.scene), undefined, reject);
-  });
+    const { renderer, scene, camera } = mindarThree;
 
-  // Загружаем все модели и привязываем к якорям
-  for (let i = 0; i < EXHIBITION_CONFIG.artworks.length; i++) {
-    const artwork = EXHIBITION_CONFIG.artworks[i];
-    const anchor = mindarThree.addAnchor(i);
+    loadingText.textContent = "Загрузка моделей...";
 
-    try {
-      const model = await loadModel(artwork.model);
+    const loader = new THREE.GLTFLoader();
 
-      // Позиция из конфига
-      model.position.set(
-        artwork.position.x,
-        artwork.position.y,
-        artwork.position.z
-      );
+    const loadModel = (url) => new Promise((resolve, reject) => {
+      loader.load(url, (gltf) => resolve(gltf.scene), undefined, reject);
+    });
 
-      // Масштаб из конфига
-      model.scale.setScalar(artwork.scale);
+    for (let i = 0; i < EXHIBITION_CONFIG.artworks.length; i++) {
+      const artwork = EXHIBITION_CONFIG.artworks[i];
+      const anchor = mindarThree.addAnchor(i);
 
-      // Поворот из конфига (градусы -> радианы)
-      model.rotation.set(
-        THREE.MathUtils.degToRad(artwork.rotation.x),
-        THREE.MathUtils.degToRad(artwork.rotation.y),
-        THREE.MathUtils.degToRad(artwork.rotation.z)
-      );
+      try {
+        const model = await loadModel(artwork.model);
 
-      anchor.group.add(model);
-    } catch (e) {
-      console.warn("Не удалось загрузить модель:", artwork.model, e);
+        model.position.set(
+          artwork.position.x,
+          artwork.position.y,
+          artwork.position.z
+        );
+
+        model.scale.setScalar(artwork.scale);
+
+        model.rotation.set(
+          THREE.MathUtils.degToRad(artwork.rotation.x),
+          THREE.MathUtils.degToRad(artwork.rotation.y),
+          THREE.MathUtils.degToRad(artwork.rotation.z)
+        );
+
+        anchor.group.add(model);
+      } catch (e) {
+        console.warn("Не удалось загрузить модель:", artwork.model, e);
+      }
     }
+
+    loadingText.textContent = "Запуск AR...";
+    await mindarThree.start();
+
+    loading.style.display = "none";
+    hint.style.display = "block";
+
+    renderer.setAnimationLoop(() => {
+      renderer.render(scene, camera);
+    });
+
+  } catch (err) {
+    loadingText.textContent = "Ошибка: " + err.message;
+    console.error(err);
   }
-
-  await mindarThree.start();
-  loading.style.display = "none";
-
-  renderer.setAnimationLoop(() => {
-    renderer.render(scene, camera);
-  });
 })();
