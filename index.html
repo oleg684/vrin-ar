@@ -10,7 +10,6 @@
     html, body {
       width: 100%; height: 100%;
       overflow: hidden;
-      /* Запрещаем браузеру обрабатывать touch как скролл/свайп */
       touch-action: none;
       overscroll-behavior: none;
       user-select: none;
@@ -18,7 +17,6 @@
     }
     body { background: #000; color: #fff; font-family: sans-serif; }
     canvas { touch-action: none; }
-
     #status-bar {
       position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
       padding: 0.4rem 1rem; background: rgba(0,0,0,0.55); border-radius: 999px;
@@ -28,42 +26,32 @@
   </style>
 </head>
 <body>
-
   <div id="status-bar">Загрузка...</div>
-
   <script>
-    // Блокируем все дефолтные touch действия браузера глобально
-    document.addEventListener("touchstart", e => e.preventDefault(), { passive: false });
-    document.addEventListener("touchmove",  e => e.preventDefault(), { passive: false });
-    document.addEventListener("touchend",   e => e.preventDefault(), { passive: false });
+    document.addEventListener("touchstart", e => e.preventDefault(), {passive:false});
+    document.addEventListener("touchmove",  e => e.preventDefault(), {passive:false});
+    document.addEventListener("touchend",   e => e.preventDefault(), {passive:false});
   </script>
-
   <script>
     const WEBHOOK = "https://webhook.site/a575bd48-e6c5-4c14-ae23-b1fcd71f458b";
     const SESSION = Date.now().toString(36) + Math.random().toString(36).substr(2,4);
-
-    function sendToServer(msg, type) {
+    function sendLog(msg, type) {
       try {
-        const blob = new Blob([JSON.stringify({ s:SESSION, t:new Date().toISOString(), type:type||"info", msg })], {type:"text/plain"});
+        const blob = new Blob([JSON.stringify({s:SESSION,t:new Date().toISOString(),type:type||"info",msg})],{type:"text/plain"});
         if (navigator.sendBeacon) navigator.sendBeacon(WEBHOOK, blob);
       } catch(e) {}
     }
-
-    function log(msg, type) { console.log(msg); sendToServer(msg, type); }
-
+    function log(msg, type) { console.log(msg); sendLog(msg, type); }
     function setStatus(text) {
       const el = document.getElementById("status-bar");
       if (el) { el.textContent = text; el.style.opacity = text ? "1" : "0"; }
     }
-
-    window.addEventListener("error", e => log("ERR: " + e.message + " @" + (e.filename||"?").split("/").pop() + ":" + e.lineno, "error"));
-    window.addEventListener("unhandledrejection", e => log("REJECT: " + (e.reason?.message || e.reason), "error"));
-
+    window.addEventListener("error", e => log("ERR: "+e.message+" @"+(e.filename||"?").split("/").pop()+":"+e.lineno,"error"));
+    window.addEventListener("unhandledrejection", e => log("REJECT: "+(e.reason?.message||e.reason),"error"));
     window.__log = log;
     window.__setStatus = setStatus;
-    log("[boot] v1778453223");
-  </script>
-
+    log("[boot] v1778453379");</script>
+  
   <script type="importmap">
   {
     "imports": {
@@ -73,12 +61,7 @@
     }
   }
   </script>
-
-  <script src="config.js?v=1778453223"
-    onload="window.__log('[load] config.js OK')"
-    onerror="window.__log('[load] config.js FAILED','error')"></script>
-
-  <script type="module" src="app.js?v=1778453223"></script>
-
+  <script src="config.js?v=1778453379" onload="window.__log('[load] config OK')" onerror="window.__log('[load] config FAIL','error')"></script>
+  <script type="module" src="viewer.js?v=1778453379"></script>
 </body>
 </html>
