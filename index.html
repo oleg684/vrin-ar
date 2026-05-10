@@ -21,52 +21,57 @@
 <body>
 
   <div id="debug">
-    <div class="log-info">[init] page loaded, sending logs to server...</div>
+    <div class="log-info">[init] page loaded</div>
   </div>
 
   <script>
     const WEBHOOK = "https://webhook.site/a575bd48-e6c5-4c14-ae23-b1fcd71f458b";
-    const SESSION = Date.now() + "-" + Math.random().toString(36).substr(2, 5);
+    const SESSION = Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
     const debugEl = document.getElementById("debug");
 
     function sendToServer(msg, type) {
+      // Используем sendBeacon - он не делает CORS preflight
+      // и не блокируется при unload
       try {
-        fetch(WEBHOOK, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            session: SESSION,
-            time: new Date().toISOString(),
-            type: type || "info",
-            message: msg,
-            ua: navigator.userAgent
-          }),
-          keepalive: true
-        }).catch(() => {});
+        const data = JSON.stringify({
+          s: SESSION,
+          t: new Date().toISOString(),
+          type: type || "info",
+          msg: msg
+        });
+        // Blob с text/plain не вызывает preflight
+        const blob = new Blob([data], { type: "text/plain" });
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon(WEBHOOK, blob);
+        } else {
+          fetch(WEBHOOK, { method: "POST", body: blob, mode: "no-cors", keepalive: true }).catch(()=>{});
+        }
       } catch(e) {}
     }
 
     function log(msg, type) {
       const div = document.createElement("div");
       div.className = "log-" + (type || "info");
-      div.textContent = "[" + new Date().toISOString().substr(11,8) + "] " + msg;
+      const t = new Date().toISOString().substr(11,12);
+      div.textContent = "[" + t + "] " + msg;
       debugEl.appendChild(div);
       console.log(msg);
       sendToServer(msg, type);
     }
 
     window.addEventListener("error", (e) => {
-      log("WINDOW ERROR: " + e.message + " @ " + (e.filename || "?") + ":" + e.lineno, "error");
+      log("WIN ERR: " + e.message + " @ " + (e.filename||"?").split("/").pop() + ":" + e.lineno, "error");
     });
     window.addEventListener("unhandledrejection", (e) => {
       const r = e.reason;
-      log("PROMISE REJECTED: " + (r?.message || r?.toString() || "unknown") + " | stack: " + (r?.stack || "").substring(0, 200), "error");
+      log("REJECT: " + (r?.message || String(r)) + " | " + (r?.stack || "").substring(0, 250), "error");
     });
 
     window.__log = log;
     log("[boot] session=" + SESSION);
-    log("[boot] ua=" + navigator.userAgent.substring(0, 80));
-    log("[boot] location=" + location.href);
+    log("[boot] ua=" + navigator.userAgent.substring(0, 100));
+    log("[boot] mediaDevices=" + !!navigator.mediaDevices + " getUserMedia=" + !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia));
+    log("[boot] isSecureContext=" + window.isSecureContext);
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"
@@ -78,11 +83,13 @@
     onerror="window.__log('[load] config.js FAILED', 'error')"></script>
 
   <script>
-    window.__log("[check] MINDAR=" + (typeof window.MINDAR) + " MINDAR.IMAGE=" + (window.MINDAR && typeof window.MINDAR.IMAGE));
-    window.__log("[check] THREE=" + (typeof window.THREE) + " EXHIBITION_CONFIG=" + (typeof EXHIBITION_CONFIG));
-    if (typeof EXHIBITION_CONFIG !== "undefined") {
-      window.__log("[check] artworks count: " + EXHIBITION_CONFIG.artworks.length);
+    window.__log("[check] MINDAR=" + (typeof window.MINDAR));
+    if (window.MINDAR) {
+      window.__log("[check] MINDAR.IMAGE=" + (typeof window.MINDAR.IMAGE));
+      window.__log("[check] MINDAR.IMAGE.THREE=" + (window.MINDAR.IMAGE && typeof window.MINDAR.IMAGE.THREE));
     }
+    window.__log("[check] window.THREE=" + (typeof window.THREE));
+    window.__log("[check] EXHIBITION_CONFIG=" + (typeof EXHIBITION_CONFIG));
   </script>
 
   <script src="app.js"
