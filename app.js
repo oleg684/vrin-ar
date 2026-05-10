@@ -1,72 +1,54 @@
-// Основная логика AR
-// Не редактируйте этот файл — все настройки в config.js
+// Диагностическая версия
+const log = window.__log;
 
 (async () => {
-  const loading = document.getElementById("loading");
-  const loadingText = document.getElementById("loading-text");
-  const hint = document.getElementById("hint");
-
   try {
-    loadingText.textContent = "Инициализация камеры...";
+    log("[app] starting");
 
-    const THREE = window.THREE;
+    if (!window.MINDAR || !window.MINDAR.IMAGE) {
+      log("[app] MINDAR.IMAGE not loaded!", "error");
+      return;
+    }
+
+    const THREE = window.MINDAR.IMAGE.THREE || window.THREE;
+    log("[app] THREE available: " + !!THREE);
+
+    if (!THREE) {
+      log("[app] THREE is missing!", "error");
+      return;
+    }
+
+    log("[app] GLTFLoader available: " + (typeof THREE.GLTFLoader));
+
     const { MindARThree } = window.MINDAR.IMAGE;
 
+    log("[app] creating MindARThree...");
     const mindarThree = new MindARThree({
       container: document.body,
       imageTargetSrc: "assets/targets/targets.mind",
-      maxTrack: EXHIBITION_CONFIG.artworks.length
+      maxTrack: 1
     });
+    log("[app] MindARThree created");
 
     const { renderer, scene, camera } = mindarThree;
 
-    loadingText.textContent = "Загрузка моделей...";
-
-    const loader = new THREE.GLTFLoader();
-
-    const loadModel = (url) => new Promise((resolve, reject) => {
-      loader.load(url, (gltf) => resolve(gltf.scene), undefined, reject);
-    });
-
-    for (let i = 0; i < EXHIBITION_CONFIG.artworks.length; i++) {
-      const artwork = EXHIBITION_CONFIG.artworks[i];
-      const anchor = mindarThree.addAnchor(i);
-
-      try {
-        const model = await loadModel(artwork.model);
-
-        model.position.set(
-          artwork.position.x,
-          artwork.position.y,
-          artwork.position.z
-        );
-
-        model.scale.setScalar(artwork.scale);
-
-        model.rotation.set(
-          THREE.MathUtils.degToRad(artwork.rotation.x),
-          THREE.MathUtils.degToRad(artwork.rotation.y),
-          THREE.MathUtils.degToRad(artwork.rotation.z)
-        );
-
-        anchor.group.add(model);
-      } catch (e) {
-        console.warn("Не удалось загрузить модель:", artwork.model, e);
-      }
+    if (typeof THREE.GLTFLoader === "undefined") {
+      log("[app] GLTFLoader is NOT in THREE namespace", "warn");
+      log("[app] checking window: " + (typeof window.GLTFLoader));
     }
 
-    loadingText.textContent = "Запуск AR...";
+    log("[app] starting AR engine...");
     await mindarThree.start();
-
-    loading.style.display = "none";
-    hint.style.display = "block";
+    log("[app] AR engine started!");
 
     renderer.setAnimationLoop(() => {
       renderer.render(scene, camera);
     });
 
+    log("[app] render loop running");
+
   } catch (err) {
-    loadingText.textContent = "Ошибка: " + err.message;
-    console.error(err);
+    log("[app] CRASH: " + err.message, "error");
+    log("[app] stack: " + (err.stack || "").substring(0, 300), "error");
   }
 })();
