@@ -1,13 +1,14 @@
 // ES module version для MindAR 1.2.x
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import { MindARThree } from "mindar-image-three";
 
 const log = window.__log;
 
 (async () => {
   try {
-    log("[app] ES module loaded, THREE=" + !!THREE + " MindARThree=" + !!MindARThree + " GLTFLoader=" + !!GLTFLoader);
+    log("[app] ES module loaded, THREE=" + !!THREE + " MindARThree=" + !!MindARThree);
     log("[app] THREE.REVISION=" + THREE.REVISION);
 
     log("[app] fetching targets.mind HEAD");
@@ -32,7 +33,21 @@ const log = window.__log;
     log("[app] MindARThree instance OK");
 
     const { renderer, scene, camera } = mindarThree;
+
+    // Настраиваем DRACO loader для сжатых моделей
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath("https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/");
+    log("[app] DRACOLoader configured");
+
     const loader = new GLTFLoader();
+    loader.setDRACOLoader(dracoLoader);
+
+    // Добавляем свет для модели
+    const light = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
+    scene.add(light);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+    dirLight.position.set(1, 1, 1);
+    scene.add(dirLight);
 
     for (let i = 0; i < EXHIBITION_CONFIG.artworks.length; i++) {
       const artwork = EXHIBITION_CONFIG.artworks[i];
@@ -52,20 +67,19 @@ const log = window.__log;
           THREE.MathUtils.degToRad(artwork.rotation.z)
         );
         anchor.group.add(model);
-        log("[app] model " + i + " attached");
+        log("[app] model " + i + " attached, vertices: " + (model.children.length ? "ok" : "empty"));
       } catch (e) {
         log("[app] model load failed: " + e.message, "error");
       }
     }
 
-    log("[app] calling start()...");
+    log("[app] calling start() (requesting camera)...");
     await mindarThree.start();
-    log("[app] start() OK - camera should be live");
+    log("[app] start() OK - camera live, point at the artwork");
 
     renderer.setAnimationLoop(() => {
       renderer.render(scene, camera);
     });
-    log("[app] render loop active. Point camera at the artwork.");
 
   } catch (err) {
     log("[app] CRASH: " + (err.message || err), "error");
