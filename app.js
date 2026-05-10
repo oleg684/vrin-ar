@@ -8,14 +8,8 @@ const setStatus = window.__setStatus;
 
 (async () => {
   try {
-    log("[app] start, THREE=" + THREE.REVISION);
+    log("[app] start v2, THREE=" + THREE.REVISION);
     setStatus("Подготовка...");
-
-    if (typeof EXHIBITION_CONFIG === "undefined") {
-      log("[app] FATAL: EXHIBITION_CONFIG missing", "error");
-      setStatus("Ошибка конфигурации");
-      return;
-    }
 
     const mindarThree = new MindARThree({
       container: document.body,
@@ -23,25 +17,25 @@ const setStatus = window.__setStatus;
       maxTrack: 1,
       uiLoading: "no",
       uiScanning: "no",
-      uiError: "no"
+      uiError: "no",
+      // Фильтры стабилизации — убирают дрожание
+      filterMinCF: 0.001,
+      filterBeta: 0.001
     });
 
     const { renderer, scene, camera } = mindarThree;
 
-    // DRACO loader для сжатых моделей
     const dracoLoader = new DRACOLoader();
     dracoLoader.setDecoderPath("https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/");
-
     const loader = new GLTFLoader();
     loader.setDRACOLoader(dracoLoader);
 
-    // Освещение
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1));
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1);
-    dirLight.position.set(1, 1, 1);
-    scene.add(dirLight);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.5));
+    const dir = new THREE.DirectionalLight(0xffffff, 1);
+    dir.position.set(1, 1, 1);
+    scene.add(dir);
 
-    setStatus("Загрузка моделей...");
+    setStatus("Загрузка модели...");
 
     for (let i = 0; i < EXHIBITION_CONFIG.artworks.length; i++) {
       const artwork = EXHIBITION_CONFIG.artworks[i];
@@ -49,14 +43,13 @@ const setStatus = window.__setStatus;
 
       anchor.onTargetFound = () => {
         log("[ar] TARGET " + i + " FOUND");
-        setStatus("Картина " + (i+1), true);
+        setStatus("", true);
       };
       anchor.onTargetLost = () => {
-        log("[ar] target " + i + " lost");
+        log("[ar] target lost");
         setStatus("Наведите камеру на картину");
       };
 
-      log("[app] loading model: " + artwork.model);
       try {
         const gltf = await new Promise((res, rej) => loader.load(artwork.model, res, undefined, rej));
         const model = gltf.scene;
@@ -68,14 +61,14 @@ const setStatus = window.__setStatus;
           THREE.MathUtils.degToRad(artwork.rotation.z)
         );
         anchor.group.add(model);
-        log("[app] model " + i + " loaded");
+        log("[app] model " + i + " loaded, scale=" + artwork.scale);
       } catch (e) {
-        log("[app] model load failed: " + e.message, "error");
+        log("[app] model failed: " + e.message, "error");
+        setStatus("Ошибка загрузки модели");
       }
     }
 
     setStatus("Запуск камеры...");
-    log("[app] start()");
     await mindarThree.start();
     log("[app] camera live");
     setStatus("Наведите камеру на картину");
@@ -86,7 +79,6 @@ const setStatus = window.__setStatus;
 
   } catch (err) {
     log("[app] CRASH: " + (err.message || err), "error");
-    log("[app] stack: " + (err.stack || "").substring(0, 400), "error");
-    setStatus("Ошибка: " + (err.message || "AR не запустился"));
+    setStatus("Ошибка: " + (err.message || err));
   }
 })();
