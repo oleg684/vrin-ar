@@ -2,29 +2,26 @@ const log = window.__log;
 
 (async () => {
   try {
-    log("[app] start, MINDAR=" + (typeof window.MINDAR));
+    log("[app] start");
 
     if (!window.MINDAR || !window.MINDAR.IMAGE) {
-      log("[app] FATAL: MINDAR.IMAGE not loaded", "error");
+      log("[app] FATAL: MINDAR.IMAGE missing", "error");
       return;
     }
 
     const THREE = window.MINDAR.IMAGE.THREE || window.THREE;
-    log("[app] THREE=" + (!!THREE) + " GLTFLoader=" + (THREE && typeof THREE.GLTFLoader));
+    log("[app] THREE=" + (!!THREE));
+    if (!THREE) { log("[app] FATAL no THREE", "error"); return; }
+    log("[app] THREE.GLTFLoader=" + (typeof THREE.GLTFLoader));
 
-    if (!THREE) {
-      log("[app] FATAL: THREE missing", "error");
-      return;
-    }
+    log("[app] fetching targets.mind HEAD");
+    const head = await fetch("assets/targets/targets.mind", { method: "HEAD" });
+    log("[app] targets.mind status=" + head.status);
 
     const { MindARThree } = window.MINDAR.IMAGE;
     log("[app] MindARThree=" + (typeof MindARThree));
 
-    log("[app] fetching targets.mind...");
-    const testFetch = await fetch("assets/targets/targets.mind", { method: "HEAD" });
-    log("[app] targets.mind HEAD status=" + testFetch.status);
-
-    log("[app] creating MindARThree instance");
+    log("[app] new MindARThree()");
     const mindarThree = new MindARThree({
       container: document.body,
       imageTargetSrc: "assets/targets/targets.mind",
@@ -33,19 +30,18 @@ const log = window.__log;
       uiScanning: "no",
       uiError: "no"
     });
-    log("[app] MindARThree created");
+    log("[app] instance created");
 
     const { renderer, scene, camera } = mindarThree;
-
     const anchor = mindarThree.addAnchor(0);
     log("[app] anchor created");
 
     anchor.onTargetFound = () => log("[app] >>> TARGET FOUND <<<");
     anchor.onTargetLost = () => log("[app] target lost");
 
-    log("[app] calling start()...");
+    log("[app] calling start() ...");
     await mindarThree.start();
-    log("[app] start() resolved - camera should be live");
+    log("[app] start() resolved!");
 
     renderer.setAnimationLoop(() => {
       renderer.render(scene, camera);
