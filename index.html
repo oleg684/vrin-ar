@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VR IN — AR Выставка</title>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>VR IN — AR Выставка v1778445337</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #000; color: #fff; font-family: monospace; }
@@ -21,7 +24,7 @@
 <body>
 
   <div id="debug">
-    <div class="log-info">[init] page loaded</div>
+    <div class="log-info">[init] v1778445337</div>
   </div>
 
   <script>
@@ -34,6 +37,7 @@
         const data = JSON.stringify({ s: SESSION, t: new Date().toISOString(), type: type || "info", msg: msg });
         const blob = new Blob([data], { type: "text/plain" });
         if (navigator.sendBeacon) navigator.sendBeacon(WEBHOOK, blob);
+        else fetch(WEBHOOK, { method: "POST", body: blob, mode: "no-cors", keepalive: true }).catch(()=>{});
       } catch(e) {}
     }
 
@@ -55,12 +59,11 @@
     });
 
     window.__log = log;
-    log("[boot] session=" + SESSION);
-    log("[boot] ua=" + navigator.userAgent.substring(0, 80));
+    log("[boot] v1778445337 session=" + SESSION);
+    log("[boot] ua=" + navigator.userAgent.substring(0, 100));
     log("[boot] secureContext=" + window.isSecureContext);
   </script>
 
-  <!-- ES modules importmap для MindAR 1.2.x -->
   <script type="importmap">
   {
     "imports": {
@@ -71,11 +74,11 @@
   }
   </script>
 
-  <script src="config.js"
+  <script src="config.js?v=1778445337"
     onload="window.__log('[load] config.js OK')"
     onerror="window.__log('[load] config.js FAILED', 'error')"></script>
 
-  <script type="module" src="app.js"></script>
+  <script type="module" src="app.js?v=1778445337"></script>
 
 </body>
 </html>
