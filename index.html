@@ -30,30 +30,18 @@
     const debugEl = document.getElementById("debug");
 
     function sendToServer(msg, type) {
-      // Используем sendBeacon - он не делает CORS preflight
-      // и не блокируется при unload
       try {
-        const data = JSON.stringify({
-          s: SESSION,
-          t: new Date().toISOString(),
-          type: type || "info",
-          msg: msg
-        });
-        // Blob с text/plain не вызывает preflight
+        const data = JSON.stringify({ s: SESSION, t: new Date().toISOString(), type: type || "info", msg: msg });
         const blob = new Blob([data], { type: "text/plain" });
-        if (navigator.sendBeacon) {
-          navigator.sendBeacon(WEBHOOK, blob);
-        } else {
-          fetch(WEBHOOK, { method: "POST", body: blob, mode: "no-cors", keepalive: true }).catch(()=>{});
-        }
+        if (navigator.sendBeacon) navigator.sendBeacon(WEBHOOK, blob);
+        else fetch(WEBHOOK, { method: "POST", body: blob, mode: "no-cors", keepalive: true }).catch(()=>{});
       } catch(e) {}
     }
 
     function log(msg, type) {
       const div = document.createElement("div");
       div.className = "log-" + (type || "info");
-      const t = new Date().toISOString().substr(11,12);
-      div.textContent = "[" + t + "] " + msg;
+      div.textContent = "[" + new Date().toISOString().substr(11,12) + "] " + msg;
       debugEl.appendChild(div);
       console.log(msg);
       sendToServer(msg, type);
@@ -69,14 +57,24 @@
 
     window.__log = log;
     log("[boot] session=" + SESSION);
-    log("[boot] ua=" + navigator.userAgent.substring(0, 100));
-    log("[boot] mediaDevices=" + !!navigator.mediaDevices + " getUserMedia=" + !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia));
-    log("[boot] isSecureContext=" + window.isSecureContext);
+    log("[boot] secure=" + window.isSecureContext + " getUserMedia=" + !!(navigator.mediaDevices?.getUserMedia));
   </script>
 
-  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"
-    onload="window.__log('[load] mind-ar.js OK')"
-    onerror="window.__log('[load] mind-ar.js FAILED', 'error')"></script>
+  <!-- Используем UMD-версии вместо ES modules -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.130.1/build/three.min.js"
+    crossorigin="anonymous"
+    onload="window.__log('[load] three.js OK, THREE=' + typeof window.THREE)"
+    onerror="window.__log('[load] three.js FAILED', 'error')"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.130.1/examples/js/loaders/GLTFLoader.js"
+    crossorigin="anonymous"
+    onload="window.__log('[load] GLTFLoader OK, available=' + (typeof window.THREE?.GLTFLoader))"
+    onerror="window.__log('[load] GLTFLoader FAILED', 'error')"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image-three.prod.js"
+    crossorigin="anonymous"
+    onload="window.__log('[load] mind-ar 1.1.5 OK, MINDAR=' + typeof window.MINDAR)"
+    onerror="window.__log('[load] mind-ar FAILED', 'error')"></script>
 
   <script src="config.js"
     onload="window.__log('[load] config.js OK')"
@@ -84,12 +82,10 @@
 
   <script>
     window.__log("[check] MINDAR=" + (typeof window.MINDAR));
-    if (window.MINDAR) {
-      window.__log("[check] MINDAR.IMAGE=" + (typeof window.MINDAR.IMAGE));
-      window.__log("[check] MINDAR.IMAGE.THREE=" + (window.MINDAR.IMAGE && typeof window.MINDAR.IMAGE.THREE));
-    }
-    window.__log("[check] window.THREE=" + (typeof window.THREE));
-    window.__log("[check] EXHIBITION_CONFIG=" + (typeof EXHIBITION_CONFIG));
+    if (window.MINDAR) window.__log("[check] MINDAR.IMAGE=" + typeof window.MINDAR.IMAGE);
+    window.__log("[check] THREE=" + typeof window.THREE);
+    window.__log("[check] THREE.GLTFLoader=" + (window.THREE && typeof window.THREE.GLTFLoader));
+    window.__log("[check] EXHIBITION_CONFIG=" + (typeof EXHIBITION_CONFIG) + (typeof EXHIBITION_CONFIG !== "undefined" ? ", " + EXHIBITION_CONFIG.artworks.length + " artworks" : ""));
   </script>
 
   <script src="app.js"
