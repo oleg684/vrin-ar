@@ -6,7 +6,10 @@ import { MindARThree } from "mindar-image-three";
 const log = window.__log;
 const setStatus = window.__setStatus;
 
+const STORAGE_KEY = "vrin_ar_author_token";
 let currentModel = null;
+let sessionToken = localStorage.getItem(STORAGE_KEY) || null;
+
 const params = {
   x: EXHIBITION_CONFIG.artworks[0].position.x,
   y: EXHIBITION_CONFIG.artworks[0].position.y,
@@ -45,19 +48,10 @@ function applyToModel() {
 });
 
 // ─── Touch ────────────────────────────────────────────────────────────────────
-// 1 палец  → вращение Y
-// 2 пальца drag → перемещение X/Y
-// 2 пальца пинч → масштаб
-
-let touch1 = null;         // позиция одного пальца
-let touch2 = null;         // центр двух пальцев
-let lastPinch = null;      // расстояние между двумя пальцами
+let touch1 = null, touch2 = null, lastPinch = null;
 
 function midpoint(t) {
-  return {
-    x: (t[0].clientX + t[1].clientX) / 2,
-    y: (t[0].clientY + t[1].clientY) / 2
-  };
+  return { x: (t[0].clientX + t[1].clientX) / 2, y: (t[0].clientY + t[1].clientY) / 2 };
 }
 function pinchDist(t) {
   const dx = t[0].clientX - t[1].clientX;
@@ -66,7 +60,7 @@ function pinchDist(t) {
 }
 
 document.addEventListener("touchstart", e => {
-  if (e.target.closest("#author-panel, #save-dialog")) return;
+  if (e.target.closest("#author-panel, #token-dialog")) return;
   if (e.touches.length === 1) {
     touch1 = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     touch2 = null; lastPinch = null;
@@ -78,50 +72,84 @@ document.addEventListener("touchstart", e => {
 }, { passive: false });
 
 document.addEventListener("touchmove", e => {
-  if (e.target.closest("#author-panel, #save-dialog")) return;
-
+  if (e.target.closest("#author-panel, #token-dialog")) return;
   if (e.touches.length === 1 && touch1) {
-    // Один палец → вращение Y
     const dx = e.touches[0].clientX - touch1.x;
     params.rotY = Math.round((params.rotY + dx * 0.5) * 10) / 10;
     touch1 = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     applyToModel();
-
   } else if (e.touches.length === 2) {
     const mid = midpoint(e.touches);
     const dist = pinchDist(e.touches);
-
     if (touch2) {
-      // Два пальца drag → перемещение X/Y
       const dx = (mid.x - touch2.x) / window.innerWidth * 4;
       const dy = (mid.y - touch2.y) / window.innerHeight * 4;
       params.x = Math.round((params.x + dx) * 100) / 100;
       params.y = Math.round((params.y - dy) * 100) / 100;
     }
-
     if (lastPinch) {
-      // Пинч → масштаб
-      params.scale = Math.round(
-        Math.max(0.01, Math.min(2, params.scale * dist / lastPinch)) * 100
-      ) / 100;
+      params.scale = Math.round(Math.max(0.01, Math.min(2, params.scale * dist / lastPinch)) * 100) / 100;
     }
-
-    touch2 = mid;
-    lastPinch = dist;
-    updateSliders();
-    applyToModel();
+    touch2 = mid; lastPinch = dist;
+    updateSliders(); applyToModel();
   }
 }, { passive: false });
 
 document.addEventListener("touchend", e => {
-  if (e.touches.length === 0) {
-    touch1 = null; touch2 = null; lastPinch = null;
-  } else if (e.touches.length === 1) {
-    // Остался один палец — переключаемся в режим вращения
+  if (e.touches.length === 0) { touch1 = null; touch2 = null; lastPinch = null; }
+  else if (e.touches.length === 1) {
     touch1 = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     touch2 = null; lastPinch = null;
   }
 }, { passive: false });
+
+// ─── Диалог токена ────────────────────────────────────────────────────────────
+function showTokenDialog(onSuccess) {
+  const dialog = $("token-dialog");
+  dialog.style.display = "flex";
+  $("token-error").style.display = "none";
+  $("inp-token").value = "";
+
+  $("btn-token-ok").onclick = async () => {
+    const t = $("inp-token").value.trim();
+    if (!t.startsWith("ghp_")) {
+      $("token-error").textContent = "Токен должен начинаться с ghp_";
+      $("token-error").style.display = "block";
+      return;
+    }
+    // Проверяем токен перед сохранением
+    $("btn-token-ok").textContent = "Проверяю...";
+    $("btn-token-ok").disabled = true;
+    try {
+      const r = await fetch("https://api.github.com/repos/oleg684/vrin-ar/contents/config.js", {
+        headers: { Authorization: "token " + t, Accept: "application/vnd.github.v3+json" }
+      });
+      if (!r.ok) throw new Error("Нет доступа: " + r.status);
+      // Токен рабочий — сохраняем
+      localStorage.setItem(STORAGE_KEY, t);
+      sessionToken = t;
+      dialog.style.display = "none";
+      log("[author] token saved to localStorage");
+      onSuccess(t);
+    } catch(e) {
+      $("token-error").textContent = "Ошибка: " + e.message;
+      $("token-error").style.display = "block";
+    }
+    $("btn-token-ok").textContent = "Сохранить";
+    $("btn-token-ok").disabled = false;
+  };
+
+  $("btn-token-cancel").onclick = () => {
+    dialog.style.display = "none";
+  };
+
+  $("btn-token-clear").onclick = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    sessionToken = null;
+    dialog.style.display = "none";
+    setStatus("Токен удалён");
+  };
+}
 
 // ─── Сохранение ───────────────────────────────────────────────────────────────
 async function saveToGitHub(ghToken) {
@@ -145,7 +173,7 @@ const EXHIBITION_CONFIG = {
     "https://api.github.com/repos/oleg684/vrin-ar/contents/config.js",
     { headers: { Authorization: "token " + ghToken, Accept: "application/vnd.github.v3+json" } }
   );
-  if (!metaR.ok) throw new Error("Нет доступа к репозиторию: " + metaR.status);
+  if (!metaR.ok) throw new Error("Нет доступа: " + metaR.status);
   const meta = await metaR.json();
 
   const upR = await fetch(
@@ -164,52 +192,56 @@ const EXHIBITION_CONFIG = {
       })
     }
   );
-  if (!upR.ok) { const e = await upR.json(); throw new Error(e.message || upR.status); }
+  if (!upR.ok) {
+    const err = await upR.json();
+    // Токен протух — удаляем из localStorage и просим снова
+    if (upR.status === 401 || upR.status === 403) {
+      localStorage.removeItem(STORAGE_KEY);
+      sessionToken = null;
+    }
+    throw new Error(err.message || upR.status);
+  }
+}
+
+async function doSave() {
+  const btn = $("btn-save");
+  btn.textContent = "Сохраняю...";
+  btn.disabled = true;
+  try {
+    await saveToGitHub(sessionToken);
+    setStatus("✅ Сохранено!");
+    setTimeout(() => setStatus("Наведите камеру на картину"), 3000);
+    log("[author] saved: " + JSON.stringify(params));
+  } catch(e) {
+    if (!sessionToken) {
+      showTokenDialog(doSave);
+    } else {
+      setStatus("Ошибка сохранения: " + e.message);
+    }
+    log("[author] save fail: " + e.message, "error");
+  }
+  btn.textContent = "💾 Сохранить";
+  btn.disabled = false;
 }
 
 // ─── Кнопки ───────────────────────────────────────────────────────────────────
 $("btn-save").addEventListener("click", () => {
-  $("save-dialog").style.display = "flex";
-  $("save-error").style.display = "none";
+  if (sessionToken) {
+    doSave();
+  } else {
+    showTokenDialog(doSave);
+  }
 });
-$("btn-cancel-save").addEventListener("click", () => {
-  $("save-dialog").style.display = "none";
-});
+
 $("btn-reset").addEventListener("click", () => {
   Object.assign(params, origParams);
   updateSliders();
   applyToModel();
 });
 
-$("btn-confirm-save").addEventListener("click", async () => {
-  const ghToken = $("inp-token").value.trim();
-  const errEl = $("save-error");
-  const btn = $("btn-confirm-save");
-
-  if (!ghToken.startsWith("ghp_")) {
-    errEl.textContent = "Токен должен начинаться с ghp_";
-    errEl.style.display = "block";
-    return;
-  }
-
-  btn.textContent = "Сохраняю...";
-  btn.disabled = true;
-  errEl.style.display = "none";
-
-  try {
-    await saveToGitHub(ghToken);
-    $("save-dialog").style.display = "none";
-    setStatus("✅ Сохранено!");
-    setTimeout(() => setStatus("Наведите камеру на картину"), 3000);
-    log("[author] saved: " + JSON.stringify(params));
-  } catch(e) {
-    errEl.textContent = "Ошибка: " + e.message;
-    errEl.style.display = "block";
-    log("[author] save fail: " + e.message, "error");
-  }
-
-  btn.textContent = "Сохранить";
-  btn.disabled = false;
+// Кнопка смены токена в панели
+$("btn-change-token").addEventListener("click", () => {
+  showTokenDialog(() => setStatus("Токен обновлён"));
 });
 
 // ─── AR ───────────────────────────────────────────────────────────────────────
@@ -217,6 +249,13 @@ $("btn-confirm-save").addEventListener("click", async () => {
   try {
     setStatus("Подготовка...");
     updateSliders();
+
+    // Если токена нет — просим сразу
+    if (!sessionToken) {
+      showTokenDialog(() => log("[author] token set on start"));
+    } else {
+      log("[author] token loaded from localStorage");
+    }
 
     const mindarThree = new MindARThree({
       container: document.body,
@@ -249,7 +288,6 @@ $("btn-confirm-save").addEventListener("click", async () => {
     currentModel = gltf.scene;
     applyToModel();
     anchor.group.add(currentModel);
-    log("[author] model loaded");
 
     setStatus("Запуск камеры...");
     await mindarThree.start();
