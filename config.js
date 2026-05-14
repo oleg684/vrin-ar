@@ -7,7 +7,7 @@ const EXHIBITION_CONFIG = {
       target: "assets/targets/artwork-1.jpg",
       model: "assets/models/artwork-1.glb",
       position: { x: 0, y: 0, z: 0 },
-      scale: 0.15,
+      scale: 0.05,
       rotation: { x: 0, y: 0, z: 0 }
     },
     {
@@ -16,7 +16,7 @@ const EXHIBITION_CONFIG = {
       target: "assets/targets/artwork-2.jpg",
       model: "assets/models/artwork-2.glb",
       position: { x: 0, y: 0, z: 0 },
-      scale: 0.15,
+      scale: 0.08,
       rotation: { x: 0, y: 0, z: 0 }
     },
     {
@@ -25,7 +25,7 @@ const EXHIBITION_CONFIG = {
       target: "assets/targets/artwork-3.jpg",
       model: "assets/models/artwork-3.glb",
       position: { x: 0, y: 0, z: 0 },
-      scale: 0.15,
+      scale: 0.06,
       rotation: { x: 0, y: 0, z: 0 }
     }
   ]
