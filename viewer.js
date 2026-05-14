@@ -8,22 +8,55 @@ const setStatus = window.__setStatus;
 
 const models = [];
 let activeModel = null;
-let viewerTouch = null;
+
+// Автоцентровка модели: сдвигаем геометрию так, чтобы центр bbox был в (0,0,0)
+function centerModel(model) {
+  const box = new THREE.Box3().setFromObject(model);
+  const center = box.getCenter(new THREE.Vector3());
+  model.position.sub(center);
+}
+
+// ─── Touch: 1 палец = вращение, 2 пальца пинч = масштаб ───
+let lastTouch = null, lastPinch = null;
 
 document.addEventListener("touchstart", e => {
-  if (e.touches.length === 1) viewerTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  if (e.touches.length === 1) {
+    lastTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    lastPinch = null;
+  } else if (e.touches.length === 2) {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    lastPinch = Math.sqrt(dx*dx + dy*dy);
+    lastTouch = null;
+  }
 }, { passive: false });
 
 document.addEventListener("touchmove", e => {
-  if (!viewerTouch || !activeModel || e.touches.length !== 1) return;
-  const dx = e.touches[0].clientX - viewerTouch.x;
-  const dy = e.touches[0].clientY - viewerTouch.y;
-  activeModel.rotation.y += dx * 0.012;
-  activeModel.rotation.x += dy * 0.012;
-  viewerTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  if (!activeModel) return;
+  if (e.touches.length === 1 && lastTouch) {
+    const dx = e.touches[0].clientX - lastTouch.x;
+    const dy = e.touches[0].clientY - lastTouch.y;
+    activeModel.rotation.y += dx * 0.012;
+    activeModel.rotation.x += dy * 0.012;
+    lastTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  } else if (e.touches.length === 2 && lastPinch) {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    const ratio = dist / lastPinch;
+    const newScale = Math.max(0.01, Math.min(2, activeModel.scale.x * ratio));
+    activeModel.scale.setScalar(newScale);
+    lastPinch = dist;
+  }
 }, { passive: false });
 
-document.addEventListener("touchend", () => { viewerTouch = null; }, { passive: false });
+document.addEventListener("touchend", e => {
+  if (e.touches.length === 0) { lastTouch = null; lastPinch = null; }
+  else if (e.touches.length === 1) {
+    lastTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    lastPinch = null;
+  }
+}, { passive: false });
 
 (async () => {
   try {
@@ -68,19 +101,23 @@ document.addEventListener("touchend", () => { viewerTouch = null; }, { passive: 
 
       try {
         const gltf = await new Promise((res, rej) => loader.load(artwork.model, res, undefined, rej));
-        const model = gltf.scene;
-        model.position.set(artwork.position.x, artwork.position.y, artwork.position.z);
-        model.scale.setScalar(artwork.scale);
-        model.rotation.set(
+        // Группа: внутрь центрированная модель, снаружи трансформации из конфига
+        const group = new THREE.Group();
+        const inner = gltf.scene;
+        centerModel(inner);
+        group.add(inner);
+        group.position.set(artwork.position.x, artwork.position.y, artwork.position.z);
+        group.scale.setScalar(artwork.scale);
+        group.rotation.set(
           THREE.MathUtils.degToRad(artwork.rotation.x),
           THREE.MathUtils.degToRad(artwork.rotation.y),
           THREE.MathUtils.degToRad(artwork.rotation.z)
         );
-        anchor.group.add(model);
-        models[i] = model;
-        log("[viewer] model " + i + " loaded");
+        anchor.group.add(group);
+        models[i] = group;
+        log("[viewer] model " + i + " loaded, scale=" + artwork.scale);
       } catch(e) {
-        log("[viewer] model " + i + " failed: " + e.message, "error");
+        log("[viewer] model " + i + " FAIL: " + e.message, "error");
       }
     }
 
