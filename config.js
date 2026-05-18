@@ -24,9 +24,9 @@ const EXHIBITION_CONFIG = {
       title: "Картина 3",
       target: "assets/targets/artwork-3.jpg",
       model: "assets/models/artwork-3.glb",
-      position: { x: 0.01, y: -0.48, z: -1.74 },
-      scale: 0.18,
-      rotation: { x: 0, y: -71.7, z: 0 }
+      position: { x: 0.05, y: 0.1, z: 0.47 },
+      scale: 0.12,
+      rotation: { x: 0, y: -87.9, z: 0 }
     }
   ]
 };
