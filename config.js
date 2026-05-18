@@ -15,9 +15,9 @@ const EXHIBITION_CONFIG = {
       title: "Картина 2",
       target: "assets/targets/artwork-2.jpg",
       model: "assets/models/artwork-2.glb",
-      position: { x: 0, y: 0, z: 0 },
-      scale: 0.08,
-      rotation: { x: 0, y: 0, z: 0 }
+      position: { x: 0.13, y: -0.48, z: 0.19 },
+      scale: 0.13,
+      rotation: { x: 0, y: -98.8, z: 0 }
     },
     {
       id: "artwork-3",
