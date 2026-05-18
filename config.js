@@ -15,18 +15,18 @@ const EXHIBITION_CONFIG = {
       title: "Картина 2",
       target: "assets/targets/artwork-2.jpg",
       model: "assets/models/artwork-2.glb",
-      position: { x: 0.13, y: -0.48, z: 0.19 },
-      scale: 0.13,
-      rotation: { x: 0, y: -98.8, z: 0 }
+      position: { x: 0, y: 0, z: 0 },
+      scale: 0.08,
+      rotation: { x: 0, y: 0, z: 0 }
     },
     {
       id: "artwork-3",
       title: "Картина 3",
       target: "assets/targets/artwork-3.jpg",
       model: "assets/models/artwork-3.glb",
-      position: { x: 0, y: 0, z: 0 },
-      scale: 0.06,
-      rotation: { x: 0, y: 0, z: 0 }
+      position: { x: 0.01, y: -0.48, z: -1.74 },
+      scale: 0.18,
+      rotation: { x: 0, y: -71.7, z: 0 }
     }
   ]
 };
