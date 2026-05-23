@@ -1,0 +1,90 @@
+name: Compile AR targets
+
+on:
+  push:
+    paths:
+      - 'assets/targets/*.jpg'
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install deps
+        run: |
+          npm install puppeteer
+          pip install pillow
+
+      - name: Resize images
+        run: |
+          python3 - << 'PYEOF'
+          from PIL import Image
+          import glob, os
+          for src in sorted(glob.glob("assets/targets/*.jpg")):
+              img = Image.open(src)
+              img.thumbnail((1000, 1000), Image.LANCZOS)
+              dst = "/tmp/target-" + os.path.basename(src)
+              img.save(dst, "JPEG", quality=85)
+              print(f"  {src} -> {os.path.getsize(dst)//1024}KB")
+          PYEOF
+
+      - name: Compile targets.mind
+        run: |
+          node << 'JSEOF'
+          const puppeteer = require('puppeteer');
+          const fs = require('fs');
+          (async () => {
+            const browser = await puppeteer.launch({
+              headless: true,
+              args: ['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage']
+            });
+            const page = await browser.newPage();
+            const client = await page.target().createCDPSession();
+            await client.send('Browser.setDownloadBehavior', {
+              behavior: 'allow', downloadPath: '/tmp/mindar-output'
+            });
+            fs.mkdirSync('/tmp/mindar-output', { recursive: true });
+            page.on('console', m => { if (!m.text().match(/GL|GPU|WebGL/)) console.log(m.text()); });
+            await page.goto('https://hiukim.github.io/mind-ar-js-doc/tools/compile', { waitUntil: 'networkidle2' });
+            const files = fs.readdirSync('/tmp')
+              .filter(f => f.startsWith('target-') && f.endsWith('.jpg'))
+              .sort().map(f => '/tmp/' + f);
+            console.log('Files:', files);
+            const input = await page.$('input[type="file"]');
+            await input.uploadFile(...files);
+            await new Promise(r => setTimeout(r, 3000));
+            await page.evaluate(() => {
+              for (const b of document.querySelectorAll('button'))
+                if (b.textContent.trim() === 'Start') { b.click(); return; }
+            });
+            console.log('Compiling', files.length, 'targets...');
+            await page.waitForFunction(() => {
+              for (const b of document.querySelectorAll('button'))
+                if (b.textContent.includes('Download')) return true;
+              return false;
+            }, { timeout: 300000 });
+            await page.evaluate(() => {
+              for (const b of document.querySelectorAll('button'))
+                if (b.textContent.includes('Download')) { b.click(); return; }
+            });
+            await new Promise(r => setTimeout(r, 6000));
+            fs.copyFileSync('/tmp/mindar-output/targets.mind', 'assets/targets/targets.mind');
+            console.log('Done:', fs.statSync('assets/targets/targets.mind').size, 'bytes');
+            await browser.close();
+          })();
+          JSEOF
+
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add assets/targets/targets.mind
+          git diff --staged --quiet || git commit -m "Auto-compile targets.mind [skip ci]"
+          git push
