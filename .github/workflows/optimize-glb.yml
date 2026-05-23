@@ -1,0 +1,36 @@
+name: Optimize GLB models
+
+on:
+  push:
+    paths:
+      - 'assets/models/raw/*.glb'
+
+jobs:
+  optimize:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install gltf-transform
+        run: npm install -g @gltf-transform/cli
+      - name: Optimize
+        run: |
+          mkdir -p assets/models
+          for f in assets/models/raw/*.glb; do
+            name=$(basename "$f")
+            out="assets/models/$name"
+            echo "Optimizing $name..."
+            gltf-transform draco "$f" "$out"
+            echo "  $(du -sh $f | cut -f1) -> $(du -sh $out | cut -f1)"
+          done
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add assets/models/*.glb
+          git diff --staged --quiet || git commit -m "Auto-optimize GLB [skip ci]"
+          git push
