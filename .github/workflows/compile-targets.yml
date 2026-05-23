@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'assets/targets/*.jpg'
+  workflow_dispatch:
 
 jobs:
   compile:
@@ -12,16 +13,13 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-
       - name: Install deps
         run: |
           npm install puppeteer
           pip install pillow
-
       - name: Resize images
         run: |
           python3 - << 'PYEOF'
@@ -34,7 +32,6 @@ jobs:
               img.save(dst, "JPEG", quality=85)
               print(f"  {src} -> {os.path.getsize(dst)//1024}KB")
           PYEOF
-
       - name: Compile targets.mind
         run: |
           node << 'JSEOF'
@@ -57,6 +54,7 @@ jobs:
               .filter(f => f.startsWith('target-') && f.endsWith('.jpg'))
               .sort().map(f => '/tmp/' + f);
             console.log('Files:', files);
+            if (!files.length) { console.log('No files!'); process.exit(1); }
             const input = await page.$('input[type="file"]');
             await input.uploadFile(...files);
             await new Promise(r => setTimeout(r, 3000));
@@ -80,7 +78,6 @@ jobs:
             await browser.close();
           })();
           JSEOF
-
       - name: Commit
         run: |
           git config user.name "github-actions[bot]"
