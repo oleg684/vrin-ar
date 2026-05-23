@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VR IN — Админка AR</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0f0f0f; color: #e0e0e0; font-family: system-ui, sans-serif; min-height: 100vh; }
+    .header {
+      background: #1a1a2e; padding: 1rem 1.5rem;
+      display: flex; align-items: center; gap: 1rem;
+      border-bottom: 1px solid #2a2a4a;
+    }
+    .header img { width: 36px; height: 36px; border-radius: 50%; }
+    .header h1 { font-size: 16px; font-weight: 500; color: #fff; }
+    .header .sub { font-size: 12px; color: #888; }
+    .container { max-width: 800px; margin: 0 auto; padding: 1.5rem; }
+
+    .token-bar {
+      background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 10px;
+      padding: 1rem; margin-bottom: 1.5rem; display: flex; gap: 0.5rem; align-items: center;
+    }
+    .token-bar input {
+      flex: 1; background: #111; border: 1px solid #333; border-radius: 6px;
+      padding: 0.5rem 0.75rem; color: #fff; font-size: 13px;
+    }
+    .token-bar .status { font-size: 12px; color: #888; white-space: nowrap; }
+    .token-bar .status.ok { color: #4ade80; }
+    .token-bar .status.err { color: #f87171; }
+
+    .section-title {
+      font-size: 13px; font-weight: 500; color: #888;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      margin-bottom: 0.75rem; margin-top: 1.5rem;
+    }
+
+    .artworks-grid { display: flex; flex-direction: column; gap: 0.75rem; }
+    .artwork-card {
+      background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 10px;
+      padding: 1rem; display: grid;
+      grid-template-columns: 80px 1fr auto; gap: 1rem; align-items: start;
+    }
+    .artwork-thumb {
+      width: 80px; height: 80px; border-radius: 6px; object-fit: cover;
+      background: #222;
+    }
+    .artwork-thumb.empty {
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; color: #444;
+    }
+    .artwork-info h3 { font-size: 14px; font-weight: 500; margin-bottom: 0.5rem; }
+    .artwork-info .badges { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+    .badge {
+      font-size: 10px; padding: 0.2rem 0.5rem; border-radius: 999px;
+      background: #2a2a2a; color: #aaa;
+    }
+    .badge.has { background: #1a3a2a; color: #4ade80; }
+    .badge.missing { background: #3a1a1a; color: #f87171; }
+    .artwork-actions { display: flex; flex-direction: column; gap: 0.4rem; }
+
+    .btn {
+      padding: 0.4rem 0.8rem; border: none; border-radius: 6px;
+      font-size: 12px; cursor: pointer; white-space: nowrap;
+      transition: opacity 0.2s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-danger { background: #7f1d1d; color: #fca5a5; }
+    .btn-secondary { background: #2a2a2a; color: #ccc; border: 1px solid #3a3a3a; }
+    .btn-success { background: #14532d; color: #86efac; }
+
+    .add-card {
+      background: #1a1a1a; border: 2px dashed #2a2a2a; border-radius: 10px;
+      padding: 1.5rem; text-align: center; cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .add-card:hover { border-color: #2563eb; }
+    .add-card p { color: #555; font-size: 13px; margin-top: 0.5rem; }
+
+    .upload-zone {
+      background: #111; border: 1px solid #2a2a2a; border-radius: 10px;
+      padding: 1.5rem; margin-top: 1.5rem; display: none;
+    }
+    .upload-zone h3 { font-size: 14px; margin-bottom: 1rem; }
+    .file-rows { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1rem; }
+    .file-row { display: flex; align-items: center; gap: 0.75rem; }
+    .file-row label { font-size: 12px; color: #888; width: 80px; flex-shrink: 0; }
+    .file-row input[type=file] { flex: 1; font-size: 12px; color: #ccc; }
+    .file-row .file-status { font-size: 11px; color: #555; }
+
+    .compile-status {
+      background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 10px;
+      padding: 1rem; margin-top: 1.5rem;
+    }
+    .compile-status h3 { font-size: 13px; color: #888; margin-bottom: 0.75rem; }
+    .run-item {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.5rem 0; border-bottom: 1px solid #1f1f1f; font-size: 12px;
+    }
+    .run-item:last-child { border-bottom: none; }
+    .run-status { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .run-status.success { background: #4ade80; }
+    .run-status.failure { background: #f87171; }
+    .run-status.in_progress { background: #fbbf24; animation: pulse 1s infinite; }
+    .run-status.queued { background: #555; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+    .run-name { flex: 1; color: #ccc; }
+    .run-time { color: #555; }
+
+    .toast {
+      position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+      background: #1e293b; color: #fff; padding: 0.6rem 1.2rem;
+      border-radius: 8px; font-size: 13px; z-index: 1000;
+      opacity: 0; transition: opacity 0.3s; pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+
+    .links-bar {
+      display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap;
+    }
+    .link-btn {
+      padding: 0.5rem 1rem; background: #1a1a2e; border: 1px solid #2a2a4a;
+      border-radius: 8px; color: #7eb3ff; font-size: 13px; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 0.4rem;
+    }
+    .link-btn:hover { background: #2a2a4a; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <img src="favicon-180.png" alt="VR IN">
+  <div>
+    <div class="h1" style="font-size:16px;font-weight:500;color:#fff;">VR IN — AR Выставка</div>
+    <div class="sub">Панель управления</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Токен -->
+  <div class="token-bar" style="margin-top:1rem;">
+    <span style="font-size:12px;color:#888;white-space:nowrap;">GitHub токен:</span>
+    <input type="password" id="gh-token" placeholder="ghp_...">
+    <button class="btn btn-secondary" onclick="verifyToken()">Проверить</button>
+    <span class="status" id="token-status">—</span>
+  </div>
+
+  <!-- Ссылки -->
+  <div class="links-bar">
+    <a class="link-btn" href="https://ar.vr-in.net/" target="_blank">👁 Зрительский режим</a>
+    <a class="link-btn" href="https://ar.vr-in.net/author.html" target="_blank">✏️ Режим автора</a>
+    <a class="link-btn" href="https://github.com/oleg684/vrin-ar/actions" target="_blank">⚙️ Actions</a>
+  </div>
+
+  <!-- Статус компиляции -->
+  <div class="compile-status">
+    <h3>⚙️ Статус компиляции <button class="btn btn-secondary" style="float:right;font-size:11px;" onclick="loadRuns()">Обновить</button></h3>
+    <div id="runs-list"><div style="color:#555;font-size:12px;">Загрузка...</div></div>
+  </div>
+
+  <!-- Картины -->
+  <div class="section-title">Картины</div>
+  <div class="artworks-grid" id="artworks-grid">
+    <div style="color:#555;font-size:13px;">Загрузка...</div>
+  </div>
+
+  <!-- Добавить -->
+  <div class="add-card" style="margin-top:0.75rem;" onclick="showUploadZone()">
+    <div style="font-size:28px;">＋</div>
+    <p>Добавить новую картину</p>
+  </div>
+
+  <!-- Зона загрузки -->
+  <div class="upload-zone" id="upload-zone">
+    <h3>Новая картина</h3>
+    <div class="file-rows">
+      <div class="file-row">
+        <label>Картина (JPG)</label>
+        <input type="file" id="file-jpg" accept=".jpg,.jpeg">
+        <span class="file-status" id="status-jpg">—</span>
+      </div>
+      <div class="file-row">
+        <label>Модель (GLB)</label>
+        <input type="file" id="file-glb" accept=".glb">
+        <span class="file-status" id="status-glb">—</span>
+      </div>
+      <div class="file-row">
+        <label>Звук (MP3)</label>
+        <input type="file" id="file-mp3" accept=".mp3,.wav,.ogg">
+        <span class="file-status" id="status-mp3">необязательно</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:0.5rem;">
+      <button class="btn btn-primary" onclick="uploadArtwork()">⬆ Загрузить</button>
+      <button class="btn btn-secondary" onclick="hideUploadZone()">Отмена</button>
+    </div>
+    <div id="upload-progress" style="margin-top:0.75rem;font-size:12px;color:#888;"></div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const REPO = "oleg684/vrin-ar";
+const RAW_BASE = "https://raw.githubusercontent.com/" + REPO + "/main/";
+
+function getToken() { return document.getElementById("gh-token").value.trim(); }
+
+function toast(msg, ok=true) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.style.background = ok ? "#14532d" : "#7f1d1d";
+  el.classList.add("show");
+  setTimeout(() => el.classList.remove("show"), 3000);
+}
+
+// Сохраняем токен в localStorage
+document.getElementById("gh-token").addEventListener("change", () => {
+  localStorage.setItem("vrin_admin_token", getToken());
+});
+window.addEventListener("load", () => {
+  const saved = localStorage.getItem("vrin_admin_token");
+  if (saved) { document.getElementById("gh-token").value = saved; verifyToken(); }
+  loadArtworks();
+  loadRuns();
+  setInterval(loadRuns, 30000);
+});
+
+async function ghFetch(path, opts={}) {
+  const t = getToken();
+  const headers = { Authorization: "token " + t, Accept: "application/vnd.github.v3+json", ...opts.headers };
+  return fetch("https://api.github.com/repos/" + REPO + "/contents/" + path, { ...opts, headers });
+}
+
+async function verifyToken() {
+  const statusEl = document.getElementById("token-status");
+  statusEl.textContent = "Проверяю..."; statusEl.className = "status";
+  try {
+    const r = await ghFetch("config.js");
+    if (r.ok) { statusEl.textContent = "✓ Подключён"; statusEl.className = "status ok"; localStorage.setItem("vrin_admin_token", getToken()); }
+    else throw new Error(r.status);
+  } catch(e) { statusEl.textContent = "✗ Ошибка"; statusEl.className = "status err"; }
+}
+
+async function loadRuns() {
+  const t = getToken();
+  if (!t) return;
+  const r = await fetch("https://api.github.com/repos/" + REPO + "/actions/runs?per_page=6",
+    { headers: { Authorization: "token " + t } });
+  if (!r.ok) return;
+  const data = await r.json();
+  const el = document.getElementById("runs-list");
+  if (!data.workflow_runs.length) { el.innerHTML = '<div style="color:#555;font-size:12px;">Нет запусков</div>'; return; }
+  el.innerHTML = data.workflow_runs.map(run => `
+    <div class="run-item">
+      <div class="run-status ${run.conclusion || run.status}"></div>
+      <div class="run-name">${run.display_title || run.name} <span style="color:#555;">#${run.run_number}</span></div>
+      <div class="run-time">${new Date(run.updated_at).toLocaleTimeString('ru')}</div>
+    </div>
+  `).join('');
+}
+
+async function loadArtworks() {
+  const r = await fetch(RAW_BASE + "config.js?v=" + Date.now());
+  if (!r.ok) return;
+  const text = await r.text();
+  const match = text.match(/const EXHIBITION_CONFIG = ([\s\S]+?);?\s*$/m);
+  if (!match) return;
+  let config;
+  try { eval("config = " + match[1]); } catch(e) { return; }
+
+  const grid = document.getElementById("artworks-grid");
+  grid.innerHTML = config.artworks.map((a, i) => `
+    <div class="artwork-card" id="card-${a.id}">
+      <img class="artwork-thumb" src="${RAW_BASE + a.target}?v=${Date.now()}"
+        onerror="this.className='artwork-thumb empty';this.textContent='🖼'">
+      <div class="artwork-info">
+        <h3>${a.title}</h3>
+        <div class="badges">
+          <span class="badge has">JPG ✓</span>
+          <span class="badge has">GLB ✓</span>
+          <span class="badge ${a.audio ? 'has' : 'missing'}">${a.audio ? 'MP3 ✓' : 'MP3 —'}</span>
+        </div>
+        <div style="font-size:11px;color:#555;">
+          scale: ${a.scale} · pos: ${a.position.x}/${a.position.y}/${a.position.z}
+        </div>
+      </div>
+      <div class="artwork-actions">
+        <button class="btn btn-danger btn-sm" onclick="deleteArtwork('${a.id}', '${a.target}', '${a.model}', '${a.audio || ''}')">Удалить</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function showUploadZone() {
+  document.getElementById("upload-zone").style.display = "block";
+  document.getElementById("upload-zone").scrollIntoView({ behavior: "smooth" });
+}
+function hideUploadZone() {
+  document.getElementById("upload-zone").style.display = "none";
+  ["jpg","glb","mp3"].forEach(t => document.getElementById("file-"+t).value = "");
+}
+
+async function uploadFile(repoPath, file) {
+  const b64 = await new Promise(res => {
+    const reader = new FileReader();
+    reader.onload = () => res(reader.result.split(",")[1]);
+    reader.readAsDataURL(file);
+  });
+  // Проверяем SHA
+  const check = await ghFetch(repoPath);
+  const sha = check.ok ? (await check.json()).sha : null;
+  const body = { message: "Admin: upload " + file.name, content: b64 };
+  if (sha) body.sha = sha;
+  const r = await ghFetch(repoPath, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) throw new Error("Upload failed: " + r.status);
+  return r;
+}
+
+async function getNextArtworkId() {
+  const r = await ghFetch("assets/targets");
+  if (!r.ok) return "artwork-10";
+  const files = await r.json();
+  const nums = files
+    .filter(f => f.name.match(/^artwork-(\d+)\.jpg$/))
+    .map(f => parseInt(f.name.match(/(\d+)/)[1]));
+  const next = nums.length ? Math.max(...nums) + 1 : 1;
+  return "artwork-" + next;
+}
+
+async function uploadArtwork() {
+  const jpg = document.getElementById("file-jpg").files[0];
+  const glb = document.getElementById("file-glb").files[0];
+  const mp3 = document.getElementById("file-mp3").files[0];
+  const progress = document.getElementById("upload-progress");
+
+  if (!jpg || !glb) { toast("JPG и GLB обязательны", false); return; }
+  if (!getToken()) { toast("Введите токен", false); return; }
+
+  const id = await getNextArtworkId();
+  const ext = mp3 ? mp3.name.split('.').pop() : null;
+
+  try {
+    progress.textContent = "Загружаю JPG...";
+    await uploadFile("assets/targets/" + id + ".jpg", jpg);
+
+    progress.textContent = "Загружаю GLB...";
+    await uploadFile("assets/models/raw/" + id + ".glb", glb);
+
+    if (mp3) {
+      progress.textContent = "Загружаю MP3...";
+      await uploadFile("assets/audio/" + id + "." + ext, mp3);
+    }
+
+    // Обновляем config.js
+    progress.textContent = "Обновляю конфиг...";
+    const cfgR = await ghFetch("config.js");
+    const cfgData = await cfgR.json();
+    const cfgText = atob(cfgData.content.replace(/
+/g,""));
+    let config;
+    eval("config = " + cfgText.match(/const EXHIBITION_CONFIG = ([\s\S]+?);?\s*$/m)[1]);
+
+    config.artworks.push({
+      id: id,
+      title: "Картина " + (config.artworks.length + 1),
+      target: "assets/targets/" + id + ".jpg",
+      model: "assets/models/" + id + ".glb",
+      ...(mp3 ? { audio: "assets/audio/" + id + "." + ext, audioLoop: true, audioVolume: 0.8 } : {}),
+      position: { x: 0, y: 0, z: 0 },
+      scale: 0.06,
+      rotation: { x: 0, y: 0, z: 0 }
+    });
+
+    const newCfg = "// Конфигурация AR-выставки\nconst EXHIBITION_CONFIG = " +
+      JSON.stringify(config, null, 2) + ";";
+
+    await ghFetch("config.js", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: "Admin: add " + id, content: btoa(unescape(encodeURIComponent(newCfg))), sha: cfgData.sha })
+    });
+
+    progress.textContent = "✅ Загружено! Компиляция запущена автоматически (~2 мин)...";
+    toast("Картина добавлена! Ждём компиляцию...");
+    hideUploadZone();
+    setTimeout(loadArtworks, 1000);
+    setTimeout(loadRuns, 5000);
+
+  } catch(e) {
+    progress.textContent = "❌ Ошибка: " + e.message;
+    toast(e.message, false);
+  }
+}
+
+async function deleteArtwork(id, targetPath, modelPath, audioPath) {
+  if (!confirm("Удалить " + id + "?")) return;
+  const t = getToken();
+  if (!t) { toast("Введите токен", false); return; }
+
+  async function del(path) {
+    const r = await ghFetch(path);
+    if (!r.ok) return;
+    const data = await r.json();
+    await ghFetch(path, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: "Admin: delete " + path, sha: data.sha })
+    });
+  }
+
+  try {
+    await del(targetPath);
+    await del(modelPath);
+    if (audioPath) await del(audioPath).catch(() => {});
+
+    // Убираем из config.js
+    const cfgR = await ghFetch("config.js");
+    const cfgData = await cfgR.json();
+    const cfgText = atob(cfgData.content.replace(/
+/g,""));
+    let config;
+    eval("config = " + cfgText.match(/const EXHIBITION_CONFIG = ([\s\S]+?);?\s*$/m)[1]);
+    config.artworks = config.artworks.filter(a => a.id !== id);
+    const newCfg = "// Конфигурация AR-выставки\nconst EXHIBITION_CONFIG = " +
+      JSON.stringify(config, null, 2) + ";";
+    await ghFetch("config.js", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: "Admin: delete " + id, content: btoa(unescape(encodeURIComponent(newCfg))), sha: cfgData.sha })
+    });
+
+    toast("Удалено. Ждём компиляцию...");
+    document.getElementById("card-" + id)?.remove();
+    setTimeout(loadRuns, 5000);
+  } catch(e) {
+    toast("Ошибка: " + e.message, false);
+  }
+}
+</script>
+</body>
+</html>
