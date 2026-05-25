@@ -68,6 +68,8 @@
     .file-current .empty { color: var(--muted); }
     .file-input-wrap { position: relative; flex-shrink: 0; }
     .file-input-wrap input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+    .glb-options { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; font-size: 11px; color: var(--muted); cursor: pointer; user-select: none; }
+    .glb-options input { cursor: pointer; }
     .btn { padding: 0.4rem 0.8rem; border: none; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem; transition: opacity 0.15s; white-space: nowrap; }
     .btn:hover { opacity: 0.85; }
     .btn:disabled { opacity: 0.35; cursor: not-allowed; }
@@ -75,7 +77,7 @@
     .btn-red { background: #3f1212; color: #fca5a5; border: 1px solid #7f1d1d; }
     .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
     .btn-outline { background: transparent; color: #7eb3ff; border: 1px solid #1e3a5f; font-size: 12px; }
-    .add-scene { border: 2px dashed var(--border); border-radius: 10px; padding: 1.25rem; text-align: center; cursor: pointer; color: var(--muted); font-size: 13px; transition: border-color 0.15s, color 0.15s; }
+    .add-scene { border: 2px dashed var(--border); border-radius: 10px; padding: 1.25rem; text-align: center; cursor: pointer; color: var(--muted); font-size: 13px; }
     .add-scene:hover { border-color: var(--blue); color: #7eb3ff; }
     .add-scene .icon { font-size: 24px; margin-bottom: 0.3rem; }
     .box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; }
@@ -146,7 +148,7 @@
         Скомпилировать и опубликовать
       </button>
       <div class="compile-note">
-        Запускает GitHub Action: компилирует targets.mind и публикует на ar.vr-in.net. Занимает ~2–3 минуты.
+        Запускает GitHub Action: компилирует targets.mind в порядке сцен и публикует на ar.vr-in.net. ~2–3 минуты.
       </div>
     </div>
     <div class="box">
@@ -207,7 +209,6 @@ function showProgress(step, msg="") {
 }
 function hideProgress() { document.getElementById("progress-overlay").classList.remove("show"); }
 
-// Config
 let config = { artworks: [] };
 let configSha = null;
 
@@ -218,14 +219,15 @@ async function loadConfig() {
     const data = await r.json();
     configSha = data.sha;
     const text = decodeURIComponent(escape(atob(data.content.replace(/\n/g,""))));
-    const m = text.match(/EXHIBITION_CONFIG\s*=\s*(\{[\s\S]*\});?\s*$/m);
+    const m = text.match(/EXHIBITION_CONFIG\s*=\s*(\{[\s\S]*\})\s*;?\s*$/m);
     if (!m) return;
-    eval("config = " + m[1]);
+    config = JSON.parse(m[1]);
     renderScenes();
-  } catch(e) { console.error(e); }
+  } catch(e) { console.error("loadConfig", e); }
 }
 
 async function saveConfig(msg) {
+  // Используем JSON.stringify — даёт валидный JSON, который потом парсим обратно через JSON.parse
   const text = "// Конфигурация AR-выставки\nconst EXHIBITION_CONFIG = " + JSON.stringify(config, null, 2) + ";";
   const r = await ghApi("config.js", {
     method: "PUT", headers: { "Content-Type": "application/json" },
@@ -286,6 +288,9 @@ function buildCard(a, i) {
         <div class="file-current">
           ${hasGlb ? `<div class="fname">${a.model.split('/').pop()}</div>` : `<div class="empty">не загружена</div>`}
         </div>
+        <label class="glb-options" title="Сжать модель через Draco для быстрой загрузки на телефоне">
+          <input type="checkbox" id="opt-${a.id}"> Оптимизировать
+        </label>
         <div class="file-input-wrap">
           <button class="btn btn-outline">⬆ Загрузить</button>
           <input type="file" accept=".glb" onchange="uploadFile('${a.id}','glb',this)">
@@ -318,7 +323,7 @@ function toggleCard(id) {
 }
 
 async function addScene() {
-  const id = "artwork-" + Date.now();
+  const id = "scene-" + Date.now().toString(36);
   config.artworks.push({ id, title: "Сцена "+(config.artworks.length+1), target:"", model:"", position:{x:0,y:0,z:0}, scale:0.06, rotation:{x:0,y:0,z:0} });
   showProgress("Сохранение...");
   try { await saveConfig("Admin: add scene"); renderScenes(); showToast("Сцена добавлена"); }
@@ -348,7 +353,14 @@ async function deleteScene(id) {
       body: JSON.stringify({message:"Admin: delete "+path, sha:d.sha}) });
   }
   try {
-    await del(a.target); await del(a.model); if (a.audio) await del(a.audio);
+    await del(a.target);
+    await del(a.model);
+    // Также удаляем raw версию если есть
+    if (a.model) {
+      const rawPath = a.model.replace("assets/models/", "assets/models/raw/");
+      await del(rawPath);
+    }
+    if (a.audio) await del(a.audio);
     config.artworks = config.artworks.filter(x=>x.id!==id);
     await saveConfig("Admin: delete scene "+id);
     renderScenes(); showToast("Сцена удалена");
@@ -376,26 +388,71 @@ async function uploadFile(sceneId, type, input) {
   const a = config.artworks.find(x=>x.id===sceneId);
   if (!a) return;
   const ext = file.name.split('.').pop().toLowerCase();
+
+  // Чекбокс «Оптимизировать» — только для GLB
+  let optimize = false;
+  if (type === 'glb') {
+    const checkbox = document.getElementById("opt-" + sceneId);
+    optimize = checkbox ? checkbox.checked : false;
+  }
+
   let path;
   if (type==='jpg') path = "assets/targets/"+sceneId+".jpg";
-  else if (type==='glb') path = "assets/models/raw/"+sceneId+".glb";
+  else if (type==='glb') {
+    // Если оптимизация → кладём в raw/, Action обработает и положит финальный в assets/models/
+    // Если нет → сразу в assets/models/
+    path = optimize ? "assets/models/raw/"+sceneId+".glb" : "assets/models/"+sceneId+".glb";
+  }
   else path = "assets/audio/"+sceneId+"."+ext;
 
-  showProgress("Загрузка "+file.name, (file.size/1024/1024).toFixed(1)+" MB");
+  showProgress("Загрузка "+file.name, (file.size/1024/1024).toFixed(1)+" MB" + (optimize ? " · оптимизация после загрузки" : ""));
   try {
     const b64 = await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result.split(",")[1]); r.onerror=rej; r.readAsDataURL(file); });
+
+    // Если GLB и НЕ оптимизация — удаляем raw версию, если она была
+    if (type === 'glb' && !optimize) {
+      const rawPath = "assets/models/raw/"+sceneId+".glb";
+      try {
+        const checkRaw = await ghApi(rawPath);
+        if (checkRaw.ok) {
+          const rawData = await checkRaw.json();
+          await ghApi(rawPath, { method:"DELETE", headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({message:"Admin: remove raw "+sceneId, sha:rawData.sha}) });
+        }
+      } catch(e) {}
+    }
+    // Если оптимизация — удаляем уже оптимизированный, чтобы Action перезаписал
+    if (type === 'glb' && optimize) {
+      const optPath = "assets/models/"+sceneId+".glb";
+      try {
+        const checkOpt = await ghApi(optPath);
+        if (checkOpt.ok) {
+          const optData = await checkOpt.json();
+          await ghApi(optPath, { method:"DELETE", headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({message:"Admin: clear old "+sceneId, sha:optData.sha}) });
+        }
+      } catch(e) {}
+    }
+
     const check = await ghApi(path);
     const sha = check.ok ? (await check.json()).sha : null;
     const body = { message:"Admin: upload "+path, content:b64 };
     if (sha) body.sha = sha;
     const r = await ghApi(path, { method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
     if (!r.ok) throw new Error("Upload error "+r.status);
+
     if (type==='jpg') a.target = path;
-    else if (type==='glb') a.model = "assets/models/"+sceneId+".glb";
+    else if (type==='glb') {
+      // model в конфиге всегда указывает на assets/models/, даже если файл лежит в raw/ — Action его обработает
+      a.model = "assets/models/"+sceneId+".glb";
+    }
     else { a.audio=path; a.audioLoop=true; a.audioVolume=0.8; }
+
     showProgress("Сохранение конфига...");
     await saveConfig("Admin: update "+sceneId+" "+type);
-    renderScenes(); showToast("Загружено: "+file.name);
+    renderScenes();
+    showToast("Загружено: "+file.name + (optimize ? " (запущена оптимизация)" : ""));
+    if (optimize) setTimeout(loadRuns, 3000);
   } catch(e) { showToast("Ошибка: "+e.message,"err"); }
   hideProgress();
 }
