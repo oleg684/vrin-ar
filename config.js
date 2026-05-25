@@ -51,9 +51,9 @@ const EXHIBITION_CONFIG = {
       title: "Картина 6",
       target: "assets/targets/artwork-9.jpg",
       model: "assets/models/artwork-9.glb",
-      position: { x: 0, y: 0, z: 0 },
-      scale: 0.06,
-      rotation: { x: 0, y: 0, z: 0 }
+      position: { x: -0.02, y: -0.75, z: -0.02 },
+      scale: 0.25,
+      rotation: { x: 0, y: -199.1, z: 0 }
     }
   ]
 };
