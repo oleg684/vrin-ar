@@ -124,7 +124,7 @@ const EXHIBITION_CONFIG = {
       "id": "artwork-1779705195121",
       "title": "Сцена 8",
       "target": "assets/targets/artwork-1779705195121.jpg",
-      "model": "",
+      "model": "assets/models/artwork-1779705195121.glb",
       "position": {
         "x": 0,
         "y": 0,
