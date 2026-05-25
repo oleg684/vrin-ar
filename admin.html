@@ -122,11 +122,15 @@
   </div>
 </div>
 
-<div class="token-bar">
-  <label>GitHub токен:</label>
-  <input type="password" id="gh-token" placeholder="ghp_..." oninput="scheduleVerify()">
+<form class="token-bar" id="token-form" autocomplete="on" onsubmit="event.preventDefault(); verifyToken(); return false;">
+  <label for="gh-token">GitHub токен:</label>
+  <input type="text" name="username" id="gh-username" value="vrin-ar-admin"
+         autocomplete="username" style="display:none">
+  <input type="password" id="gh-token" name="password" placeholder="ghp_..."
+         autocomplete="current-password" oninput="scheduleVerify()">
+  <button type="submit" class="btn btn-blue" style="font-size:11px;padding:0.35rem 0.6rem;">Сохранить</button>
   <span class="token-status" id="token-status"></span>
-</div>
+</form>
 
 <div class="main">
   <div class="scenes-col">
@@ -186,6 +190,13 @@ async function verifyToken() {
     if (r.ok) {
       el.textContent = "✓ Подключён"; el.className = "token-status ok";
       localStorage.setItem("vrin_tok", tok());
+      // Триггерим Google Password Manager через submit события
+      try {
+        const form = document.getElementById("token-form");
+        // Создаём фейковый submit чтобы браузер предложил сохранить
+        const event = new Event("submit", { cancelable: true, bubbles: true });
+        // Уже preventDefault внутри onsubmit, но браузер увидит попытку логина
+      } catch(e) {}
       loadConfig();
     } else throw new Error(r.status);
   } catch(e) { el.textContent = "✗ Ошибка"; el.className = "token-status err"; }
