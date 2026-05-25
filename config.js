@@ -15,9 +15,9 @@ const EXHIBITION_CONFIG = {
       title: "Картина 2",
       target: "assets/targets/artwork-5.jpg",
       model: "assets/models/artwork-5.glb",
-      position: { x: 0, y: 0, z: 0 },
-      scale: 0.06,
-      rotation: { x: 0, y: 0, z: 0 }
+      position: { x: -0.05, y: -0.05, z: 0 },
+      scale: 0.2,
+      rotation: { x: 0, y: -72.4, z: 0 }
     },
     {
       id: "artwork-6",
@@ -44,7 +44,7 @@ const EXHIBITION_CONFIG = {
       model: "assets/models/artwork-8.glb",
       position: { x: 0.07, y: -0.14, z: -0.04 },
       scale: 0.12,
-      rotation: { x: 0, y: -189.9, z: 0 }
+      rotation: { x: 0, y: -195.4, z: 0 }
     },
     {
       id: "artwork-9",
