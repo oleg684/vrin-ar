@@ -4,7 +4,12 @@ on:
   push:
     paths:
       - 'assets/targets/*.jpg'
+      - 'config.js'
   workflow_dispatch:
+
+concurrency:
+  group: repo-write
+  cancel-in-progress: false
 
 jobs:
   compile:
@@ -16,22 +21,52 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+
       - name: Install deps
         run: |
           npm install puppeteer
           pip install pillow
-      - name: Resize images
+
+      - name: Read config order
+        id: order
+        run: |
+          python3 - << 'PYEOF'
+          import re, json
+          with open('config.js') as f:
+              txt = f.read()
+          m = re.search(r'EXHIBITION_CONFIG\s*=\s*(\{.*\})\s*;?\s*$', txt, re.DOTALL)
+          if not m:
+              print("No config")
+              exit(1)
+          # JSON5-like: используем eval безопасно через json
+          # config.js — это JSON-совместимый объект (мы пишем через JSON.stringify)
+          cfg = json.loads(m.group(1))
+          order = [a['id'] for a in cfg['artworks'] if a.get('target')]
+          with open('/tmp/order.txt', 'w') as f:
+              f.write('\n'.join(order))
+          print("Order:", order)
+          PYEOF
+
+      - name: Resize images in config order
         run: |
           python3 - << 'PYEOF'
           from PIL import Image
-          import glob, os
-          for src in sorted(glob.glob("assets/targets/*.jpg")):
+          import os
+          with open('/tmp/order.txt') as f:
+              ids = [l.strip() for l in f if l.strip()]
+          for idx, scene_id in enumerate(ids, 1):
+              src = f"assets/targets/{scene_id}.jpg"
+              if not os.path.exists(src):
+                  print(f"  SKIP: {src} not found")
+                  continue
               img = Image.open(src)
               img.thumbnail((1000, 1000), Image.LANCZOS)
-              dst = "/tmp/target-" + os.path.basename(src)
+              # Префиксуем порядковым номером чтобы sort давал правильный порядок
+              dst = f"/tmp/{idx:03d}-{scene_id}.jpg"
               img.save(dst, "JPEG", quality=85)
-              print(f"  {src} -> {os.path.getsize(dst)//1024}KB")
+              print(f"  {dst} ({os.path.getsize(dst)//1024}KB)")
           PYEOF
+
       - name: Compile targets.mind
         run: |
           node << 'JSEOF'
@@ -51,9 +86,10 @@ jobs:
             page.on('console', m => { if (!m.text().match(/GL|GPU|WebGL/)) console.log(m.text()); });
             await page.goto('https://hiukim.github.io/mind-ar-js-doc/tools/compile', { waitUntil: 'networkidle2' });
             const files = fs.readdirSync('/tmp')
-              .filter(f => f.startsWith('target-') && f.endsWith('.jpg'))
-              .sort().map(f => '/tmp/' + f);
-            console.log('Files:', files);
+              .filter(f => /^\d{3}-.*\.jpg$/.test(f))
+              .sort()
+              .map(f => '/tmp/' + f);
+            console.log('Files in order:', files);
             if (!files.length) { console.log('No files!'); process.exit(1); }
             const input = await page.$('input[type="file"]');
             await input.uploadFile(...files);
@@ -78,10 +114,24 @@ jobs:
             await browser.close();
           })();
           JSEOF
-      - name: Commit
+
+      - name: Commit with retry
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add assets/targets/targets.mind
-          git diff --staged --quiet || git commit -m "Auto-compile targets.mind [skip ci]"
-          git push
+          if git diff --staged --quiet; then
+            echo "Nothing to commit"
+            exit 0
+          fi
+          git commit -m "Auto-compile targets.mind [skip ci]"
+          for i in 1 2 3 4 5; do
+            git pull --rebase origin main || true
+            if git push; then
+              echo "Pushed on attempt $i"
+              exit 0
+            fi
+            echo "Push failed, retry $i/5"
+            sleep $((i * 5))
+          done
+          exit 1
