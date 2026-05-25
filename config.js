@@ -123,7 +123,7 @@ const EXHIBITION_CONFIG = {
     {
       "id": "artwork-1779705195121",
       "title": "Сцена 8",
-      "target": "",
+      "target": "assets/targets/artwork-1779705195121.jpg",
       "model": "",
       "position": {
         "x": 0,
