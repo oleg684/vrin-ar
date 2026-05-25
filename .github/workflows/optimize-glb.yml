@@ -4,6 +4,11 @@ on:
   push:
     paths:
       - 'assets/models/raw/*.glb'
+  workflow_dispatch:
+
+concurrency:
+  group: repo-write
+  cancel-in-progress: false
 
 jobs:
   optimize:
@@ -21,16 +26,30 @@ jobs:
         run: |
           mkdir -p assets/models
           for f in assets/models/raw/*.glb; do
+            [ -f "$f" ] || continue
             name=$(basename "$f")
             out="assets/models/$name"
             echo "Optimizing $name..."
-            gltf-transform draco "$f" "$out"
+            gltf-transform draco "$f" "$out" || { echo "FAIL on $name"; continue; }
             echo "  $(du -sh $f | cut -f1) -> $(du -sh $out | cut -f1)"
           done
-      - name: Commit
+      - name: Commit with retry
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add assets/models/*.glb
-          git diff --staged --quiet || git commit -m "Auto-optimize GLB [skip ci]"
-          git push
+          if git diff --staged --quiet; then
+            echo "Nothing to commit"
+            exit 0
+          fi
+          git commit -m "Auto-optimize GLB [skip ci]"
+          for i in 1 2 3 4 5; do
+            git pull --rebase origin main || true
+            if git push; then
+              echo "Pushed on attempt $i"
+              exit 0
+            fi
+            echo "Push failed, retry $i/5"
+            sleep $((i * 5))
+          done
+          exit 1
