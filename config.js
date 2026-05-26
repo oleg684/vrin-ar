@@ -16,7 +16,10 @@ const EXHIBITION_CONFIG = {
         "x": 0,
         "y": -86,
         "z": 0
-      }
+      },
+      "audio": "assets/audio/artwork-4.mp3",
+      "audioLoop": true,
+      "audioVolume": 0.8
     },
     {
       "id": "artwork-5",
