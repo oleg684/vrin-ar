@@ -16,7 +16,10 @@ const EXHIBITION_CONFIG = {
         "x": 0,
         "y": 0,
         "z": 0
-      }
+      },
+      "audio": "assets/audio/scene-mpo3rg4w.mp3",
+      "audioLoop": true,
+      "audioVolume": 0.8
     }
   ]
 };
