@@ -60,27 +60,27 @@ const EXHIBITION_CONFIG = {
       title: "Сцена 7",
       target: "assets/targets/scene-mppc6rze.jpg",
       model: "assets/models/scene-mppc6rze.glb",
-      position: { x: 0, y: 0, z: 0 },
-      scale: 0.06,
-      rotation: { x: 0, y: 0, z: 0 }
+      position: { x: 3, y: -1.55, z: -1.28 },
+      scale: 0.28,
+      rotation: { x: 0, y: 57.7, z: 0 }
     },
     {
       id: "scene-mppc6uwc",
       title: "Сцена 8",
       target: "assets/targets/scene-mppc6uwc.jpg",
       model: "assets/models/scene-mppc6uwc.glb",
-      position: { x: 0, y: 0, z: 0 },
-      scale: 0.06,
-      rotation: { x: 0, y: 0, z: 0 }
+      position: { x: -0.14, y: 2.07, z: 2 },
+      scale: 2,
+      rotation: { x: 0, y: -48.2, z: 0 }
     },
     {
       id: "scene-mppcccfs",
       title: "Сцена 9",
       target: "assets/targets/scene-mppcccfs.jpg",
       model: "assets/models/scene-mppcccfs.glb",
-      position: { x: 0, y: 0, z: 0 },
-      scale: 0.06,
-      rotation: { x: 0, y: 0, z: 0 }
+      position: { x: 0.13, y: -0.01, z: 0 },
+      scale: 0.09,
+      rotation: { x: 0, y: -191.7, z: 0 }
     }
   ]
 };
