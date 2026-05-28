@@ -8,7 +8,7 @@ const EXHIBITION_CONFIG = {
       model: "assets/models/scene-mpo3rg4w.glb",
       position: { x: -0.41, y: 0, z: 0 },
       scale: 0.12,
-      rotation: { x: 0, y: -94.9, z: 0 }
+      rotation: { x: 0, y: -116.9, z: 0 }
     },
     {
       id: "scene-mppbp3tj",
@@ -24,9 +24,9 @@ const EXHIBITION_CONFIG = {
       title: "Сцена 3",
       target: "assets/targets/scene-mppbsee9.jpg",
       model: "assets/models/scene-mppbsee9.glb",
-      position: { x: 0, y: 0, z: 0 },
-      scale: 0.06,
-      rotation: { x: 0, y: 0, z: 0 }
+      position: { x: -0.02, y: 0, z: 0 },
+      scale: 0.12,
+      rotation: { x: 0, y: -98.8, z: 0 }
     },
     {
       id: "scene-mppbsuj9",
