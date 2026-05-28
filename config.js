@@ -105,6 +105,23 @@ const EXHIBITION_CONFIG = {
         "y": 0,
         "z": 0
       }
+    },
+    {
+      "id": "scene-mppc6rze",
+      "title": "Сцена 7",
+      "target": "",
+      "model": "",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": 0.06,
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
     }
   ]
 };
