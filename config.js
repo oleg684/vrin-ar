@@ -51,9 +51,9 @@ const EXHIBITION_CONFIG = {
       title: "Сцена 6",
       target: "assets/targets/scene-mppc6qqk.jpg",
       model: "assets/models/scene-mppc6qqk.glb",
-      position: { x: 0, y: 0, z: 0 },
-      scale: 0.06,
-      rotation: { x: 0, y: 0, z: 0 }
+      position: { x: 0.63, y: -0.21, z: -0.94 },
+      scale: 0.09,
+      rotation: { x: 0, y: -100.7, z: 0 }
     },
     {
       id: "scene-mppc6rze",
