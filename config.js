@@ -41,7 +41,7 @@ const EXHIBITION_CONFIG = {
     {
       "id": "scene-mppbsee9",
       "title": "Сцена 3",
-      "target": "",
+      "target": "assets/targets/scene-mppbsee9.jpg",
       "model": "",
       "position": {
         "x": 0,
