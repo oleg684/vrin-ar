@@ -144,7 +144,7 @@ const EXHIBITION_CONFIG = {
       "id": "scene-mppcccfs",
       "title": "Сцена 9",
       "target": "assets/targets/scene-mppcccfs.jpg",
-      "model": "",
+      "model": "assets/models/scene-mppcccfs.glb",
       "position": {
         "x": 0,
         "y": 0,
