@@ -5,506 +5,309 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>VR IN — AR Админка</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --bg: #0d0d0d; --surface: #1a1a1a; --surface2: #222;
-      --border: #2a2a2a; --text: #e0e0e0; --muted: #666;
-      --blue: #2563eb; --green: #16a34a; --red: #dc2626;
-    }
-    body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; font-size: 14px; }
-    .header {
-      background: var(--surface); border-bottom: 1px solid var(--border);
-      padding: 0.75rem 1.5rem; display: flex; align-items: center; gap: 1rem;
-      position: sticky; top: 0; z-index: 50;
-    }
-    .header img { width: 32px; height: 32px; border-radius: 50%; }
-    .header h1 { font-size: 15px; font-weight: 600; }
-    .spacer { flex: 1; }
-    .header-links { display: flex; gap: 0.5rem; }
-    .header-links a {
-      padding: 0.35rem 0.75rem; background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 6px; color: #7eb3ff; font-size: 12px; text-decoration: none;
-    }
-    .token-bar {
-      background: var(--surface); border-bottom: 1px solid var(--border);
-      padding: 0.6rem 1.5rem; display: flex; align-items: center; gap: 0.75rem;
-    }
-    .token-bar label { font-size: 12px; color: var(--muted); white-space: nowrap; }
-    .token-bar input {
-      flex: 1; max-width: 340px; background: var(--bg); border: 1px solid var(--border);
-      border-radius: 6px; padding: 0.35rem 0.6rem; color: var(--text); font-size: 12px;
-    }
-    .token-status { font-size: 12px; }
-    .token-status.ok { color: #4ade80; }
-    .token-status.err { color: #f87171; }
-    .main { display: grid; grid-template-columns: 1fr 320px; min-height: calc(100vh - 88px); }
-    .scenes-col { border-right: 1px solid var(--border); padding: 1.25rem; }
-    .sidebar { padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; }
-    .section-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
-    .section-header h2 { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
-    .count { font-size: 11px; background: var(--surface2); border: 1px solid var(--border); padding: 0.15rem 0.5rem; border-radius: 999px; color: var(--muted); }
-    .scene-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 0.75rem; overflow: hidden; }
-    .scene-card.selected { border-color: var(--blue); }
-    .scene-card-header { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; cursor: pointer; }
-    .scene-thumb { width: 56px; height: 56px; border-radius: 6px; object-fit: cover; background: var(--surface2); flex-shrink: 0; }
-    .scene-thumb-empty { width: 56px; height: 56px; border-radius: 6px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--border); flex-shrink: 0; }
-    .scene-meta { flex: 1; min-width: 0; }
-    .scene-name-input { background: transparent; border: none; color: var(--text); font-size: 14px; font-weight: 500; width: 100%; outline: none; border-bottom: 1px solid transparent; padding-bottom: 1px; }
-    .scene-name-input:focus { border-bottom-color: var(--blue); }
-    .scene-badges { display: flex; gap: 0.3rem; margin-top: 0.35rem; }
-    .badge { font-size: 10px; padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 500; }
-    .badge.ok { background: #14532d; color: #86efac; }
-    .badge.missing { background: #3f1212; color: #fca5a5; }
-    .badge.optional { background: #1c1c1c; color: #555; border: 1px solid var(--border); }
-    .scene-body { border-top: 1px solid var(--border); padding: 1rem; display: none; }
-    .scene-body.open { display: block; }
-    .file-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
-    .file-row:last-child { border-bottom: none; padding-bottom: 0; }
-    .file-label { width: 80px; flex-shrink: 0; }
-    .file-label .type { font-size: 12px; font-weight: 500; }
-    .file-label .ext { font-size: 10px; color: var(--muted); }
-    .file-current { flex: 1; min-width: 0; font-size: 12px; }
-    .file-current .fname { color: #7eb3ff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .file-current .empty { color: var(--muted); }
-    .file-input-wrap { position: relative; flex-shrink: 0; }
-    .file-input-wrap input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
-    .glb-options { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; font-size: 11px; color: var(--muted); cursor: pointer; user-select: none; }
-    .glb-options input { cursor: pointer; }
-    .btn { padding: 0.4rem 0.8rem; border: none; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem; transition: opacity 0.15s; white-space: nowrap; }
-    .btn:hover { opacity: 0.85; }
-    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
-    .btn-blue { background: var(--blue); color: #fff; }
-    .btn-red { background: #3f1212; color: #fca5a5; border: 1px solid #7f1d1d; }
-    .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
-    .btn-outline { background: transparent; color: #7eb3ff; border: 1px solid #1e3a5f; font-size: 12px; }
-    .add-scene { border: 2px dashed var(--border); border-radius: 10px; padding: 1.25rem; text-align: center; cursor: pointer; color: var(--muted); font-size: 13px; }
-    .add-scene:hover { border-color: var(--blue); color: #7eb3ff; }
-    .add-scene .icon { font-size: 24px; margin-bottom: 0.3rem; }
-    .box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; }
-    .box h3 { font-size: 13px; font-weight: 600; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between; }
-    .compile-btn { width: 100%; padding: 0.75rem; background: var(--blue); color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
-    .compile-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .compile-note { font-size: 11px; color: var(--muted); margin-top: 0.6rem; line-height: 1.5; }
-    .run-item { display: flex; align-items: center; gap: 0.6rem; padding: 0.45rem 0; border-bottom: 1px solid var(--border); font-size: 12px; }
-    .run-item:last-child { border-bottom: none; }
-    .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-    .dot.success { background: #4ade80; }
-    .dot.failure { background: #f87171; }
-    .dot.in_progress, .dot.queued { background: #fbbf24; animation: blink 1s infinite; }
-    @keyframes blink { 0%,100%{opacity:1}50%{opacity:0.3} }
-    .run-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .run-num { color: var(--muted); }
-    .run-time { color: var(--muted); font-size: 11px; flex-shrink: 0; }
-    .progress-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 200; align-items: center; justify-content: center; }
-    .progress-overlay.show { display: flex; }
-    .progress-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; min-width: 280px; text-align: center; }
-    .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1rem; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .progress-step { font-size: 15px; font-weight: 500; margin-bottom: 0.4rem; }
-    .progress-msg { font-size: 12px; color: var(--muted); }
-    .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); padding: 0.6rem 1.25rem; border-radius: 8px; font-size: 13px; z-index: 300; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
-    .toast.show { opacity: 1; }
-    .toast.ok { background: #14532d; color: #86efac; }
-    .toast.err { background: #7f1d1d; color: #fca5a5; }
-    @media (max-width: 650px) { .main { grid-template-columns: 1fr; } .scenes-col { border-right: none; border-bottom: 1px solid var(--border); } }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    :root{--bg:#0d0d0d;--surface:#1a1a1a;--surface2:#222;--border:#2a2a2a;--text:#e0e0e0;--muted:#666;--blue:#2563eb;--green:#16a34a;--red:#dc2626;}
+    body{background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;font-size:14px;}
+    .header{background:var(--surface);border-bottom:1px solid var(--border);padding:0.75rem 1.5rem;display:flex;align-items:center;gap:1rem;position:sticky;top:0;z-index:50;}
+    .header img{width:32px;height:32px;border-radius:50%;}
+    .header h1{font-size:15px;font-weight:600;}
+    .spacer{flex:1;}
+    .header-links{display:flex;gap:0.5rem;}
+    .header-links a{padding:0.35rem 0.75rem;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:#7eb3ff;font-size:12px;text-decoration:none;}
+    .token-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:0.6rem 1.5rem;display:flex;align-items:center;gap:0.75rem;}
+    .token-bar label{font-size:12px;color:var(--muted);white-space:nowrap;}
+    .token-bar input{flex:1;max-width:300px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0.6rem;color:var(--text);font-size:12px;}
+    .token-status{font-size:12px;}.token-status.ok{color:#4ade80;}.token-status.err{color:#f87171;}
+    .container{max-width:900px;margin:0 auto;padding:1.5rem;}
+    .breadcrumb{display:flex;align-items:center;gap:0.5rem;margin-bottom:1.25rem;font-size:13px;color:var(--muted);}
+    .breadcrumb a{color:#7eb3ff;text-decoration:none;cursor:pointer;}
+    .breadcrumb .sep{color:var(--border);}
+    .section-header{display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;}
+    .section-header h2{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;}
+    .count{font-size:11px;background:var(--surface2);border:1px solid var(--border);padding:0.15rem 0.5rem;border-radius:999px;color:var(--muted);}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:0.75rem;overflow:hidden;}
+    .card.selected{border-color:var(--blue);}
+    .card-header{display:flex;align-items:center;gap:0.75rem;padding:0.85rem 1rem;cursor:pointer;}
+    .thumb{width:56px;height:56px;border-radius:6px;object-fit:cover;background:var(--surface2);flex-shrink:0;}
+    .thumb-empty{width:56px;height:56px;border-radius:6px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--border);flex-shrink:0;}
+    .card-meta{flex:1;min-width:0;}
+    .name-input{background:transparent;border:none;color:var(--text);font-size:14px;font-weight:500;width:100%;outline:none;border-bottom:1px solid transparent;padding-bottom:1px;}
+    .name-input:focus{border-bottom-color:var(--blue);}
+    .sub{font-size:12px;color:var(--muted);margin-top:0.25rem;}
+    .badges{display:flex;gap:0.3rem;margin-top:0.35rem;}
+    .badge{font-size:10px;padding:0.15rem 0.45rem;border-radius:4px;font-weight:500;}
+    .badge.ok{background:#14532d;color:#86efac;}.badge.missing{background:#3f1212;color:#fca5a5;}.badge.optional{background:#1c1c1c;color:#555;border:1px solid var(--border);}
+    .card-body{border-top:1px solid var(--border);padding:1rem;display:none;}
+    .card-body.open{display:block;}
+    .file-row{display:flex;align-items:center;gap:0.75rem;padding:0.6rem 0;border-bottom:1px solid var(--border);}
+    .file-row:last-child{border-bottom:none;padding-bottom:0;}
+    .file-label{width:80px;flex-shrink:0;}.file-label .type{font-size:12px;font-weight:500;}.file-label .ext{font-size:10px;color:var(--muted);}
+    .file-current{flex:1;min-width:0;font-size:12px;}.file-current .fname{color:#7eb3ff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.file-current .empty{color:var(--muted);}
+    .file-input-wrap{position:relative;flex-shrink:0;}.file-input-wrap input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;}
+    .glb-opt{display:flex;align-items:center;gap:0.4rem;flex-shrink:0;font-size:11px;color:var(--muted);cursor:pointer;user-select:none;}
+    .btn{padding:0.4rem 0.8rem;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:0.3rem;white-space:nowrap;}
+    .btn:hover{opacity:0.85;}.btn:disabled{opacity:0.35;cursor:not-allowed;}
+    .btn-blue{background:var(--blue);color:#fff;}.btn-red{background:#3f1212;color:#fca5a5;border:1px solid #7f1d1d;}.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border);}.btn-outline{background:transparent;color:#7eb3ff;border:1px solid #1e3a5f;}
+    .add-card{border:2px dashed var(--border);border-radius:10px;padding:1.25rem;text-align:center;cursor:pointer;color:var(--muted);font-size:13px;}
+    .add-card:hover{border-color:var(--blue);color:#7eb3ff;}.add-card .icon{font-size:24px;margin-bottom:0.3rem;}
+    .compile-bar{display:flex;gap:0.75rem;margin:1.25rem 0;align-items:center;}
+    .compile-btn{padding:0.6rem 1.25rem;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;}
+    .compile-btn:disabled{opacity:0.4;}
+    .runs-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-top:1.5rem;}
+    .runs-box h3{font-size:13px;font-weight:600;margin-bottom:0.75rem;display:flex;justify-content:space-between;}
+    .run-item{display:flex;align-items:center;gap:0.6rem;padding:0.4rem 0;border-bottom:1px solid var(--border);font-size:12px;}
+    .run-item:last-child{border-bottom:none;}
+    .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+    .dot.success{background:#4ade80;}.dot.failure{background:#f87171;}.dot.in_progress,.dot.queued{background:#fbbf24;animation:blink 1s infinite;}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+    .run-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.run-time{color:var(--muted);font-size:11px;}
+    .new-exhib{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-top:0.75rem;}
+    .new-exhib input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:0.5rem;color:var(--text);font-size:13px;margin-bottom:0.5rem;}
+    .new-exhib .hint{font-size:11px;color:var(--muted);margin-bottom:0.5rem;}
+    .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;align-items:center;justify-content:center;}
+    .overlay.show{display:flex;}
+    .overlay-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2rem;min-width:280px;text-align:center;}
+    .spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 1rem;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .overlay-step{font-size:15px;font-weight:500;margin-bottom:0.4rem;}.overlay-msg{font-size:12px;color:var(--muted);}
+    .toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);padding:0.6rem 1.25rem;border-radius:8px;font-size:13px;z-index:300;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;}
+    .toast.show{opacity:1;}.toast.ok{background:#14532d;color:#86efac;}.toast.err{background:#7f1d1d;color:#fca5a5;}
   </style>
 </head>
 <body>
-
 <div class="header">
-  <img src="favicon-180.png" alt="VR IN">
-  <h1>AR Выставка — Управление</h1>
+  <img src="/favicon-180.png" alt="VR IN">
+  <h1>AR Выставки — Управление</h1>
   <div class="spacer"></div>
   <div class="header-links">
-    <a href="https://ar.vr-in.net/" target="_blank">👁 Зритель</a>
-    <a href="https://ar.vr-in.net/author.html" target="_blank">✏️ Автор</a>
     <a href="https://github.com/oleg684/vrin-ar/actions" target="_blank">⚙️ Actions</a>
   </div>
 </div>
-
-<form class="token-bar" id="token-form" autocomplete="on" onsubmit="event.preventDefault(); verifyToken(); return false;">
-  <label for="gh-token">GitHub токен:</label>
-  <input type="text" name="username" id="gh-username" value="vrin-ar-admin"
-         autocomplete="username" style="display:none">
-  <input type="password" id="gh-token" name="password" placeholder="ghp_..."
-         autocomplete="current-password" oninput="scheduleVerify()">
-  <button type="submit" class="btn btn-blue" style="font-size:11px;padding:0.35rem 0.6rem;">Сохранить</button>
+<div class="token-bar">
+  <label>GitHub токен:</label>
+  <input type="password" id="gh-token" placeholder="ghp_..." oninput="scheduleVerify()">
   <span class="token-status" id="token-status"></span>
-</form>
+</div>
 
-<div class="main">
-  <div class="scenes-col">
-    <div class="section-header">
-      <h2>Сцены</h2>
-      <span class="count" id="scene-count">0</span>
-    </div>
-    <div id="scenes-list"></div>
-    <div class="add-scene" onclick="addScene()">
-      <div class="icon">＋</div>
-      Добавить сцену
-    </div>
-  </div>
-
-  <div class="sidebar">
-    <div class="box">
-      <h3>🔄 Компиляция</h3>
-      <button class="compile-btn" id="compile-btn" onclick="triggerCompile()">
-        Скомпилировать и опубликовать
-      </button>
-      <div class="compile-note">
-        Запускает GitHub Action: компилирует targets.mind в порядке сцен и публикует на ar.vr-in.net. ~2–3 минуты.
-      </div>
-    </div>
-    <div class="box">
-      <h3>Статус сборок <button class="btn btn-ghost" style="font-size:11px;padding:0.2rem 0.5rem;" onclick="loadRuns()">↻</button></h3>
-      <div id="runs-list"><div style="color:var(--muted);font-size:12px;">Загрузка...</div></div>
-    </div>
+<div class="container">
+  <div class="breadcrumb" id="breadcrumb"></div>
+  <div id="view"></div>
+  <div class="runs-box">
+    <h3>Статус сборок <button class="btn btn-ghost" style="font-size:11px;padding:0.2rem 0.5rem;" onclick="loadRuns()">↻</button></h3>
+    <div id="runs-list"><div style="color:var(--muted);font-size:12px;">—</div></div>
   </div>
 </div>
 
-<div class="progress-overlay" id="progress-overlay">
-  <div class="progress-box">
-    <div class="spinner"></div>
-    <div class="progress-step" id="progress-step">Загрузка...</div>
-    <div class="progress-msg" id="progress-msg"></div>
-  </div>
-</div>
+<div class="overlay" id="overlay"><div class="overlay-box"><div class="spinner"></div><div class="overlay-step" id="ov-step">Загрузка...</div><div class="overlay-msg" id="ov-msg"></div></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
-const REPO = "oleg684/vrin-ar";
-const RAW = "https://raw.githubusercontent.com/" + REPO + "/main/";
-const API_BASE = "https://api.github.com/repos/" + REPO;
+const REPO="oleg684/vrin-ar";
+const RAW="https://raw.githubusercontent.com/"+REPO+"/main/";
+const API="https://api.github.com/repos/"+REPO;
+let state={view:"exhibitions",exhibition:null,config:null,configSha:null};
 
-function tok() { return document.getElementById("gh-token").value.trim(); }
+function tok(){return document.getElementById("gh-token").value.trim();}
+let vt;function scheduleVerify(){clearTimeout(vt);vt=setTimeout(verifyToken,800);}
+async function verifyToken(){
+  const el=document.getElementById("token-status");
+  if(!tok()){el.textContent="";return;}
+  el.textContent="Проверяю...";el.className="token-status";
+  try{const r=await api("");if(r.ok){el.textContent="✓ Подключён";el.className="token-status ok";localStorage.setItem("vrin_tok",tok());loadExhibitions();loadRuns();}else throw new Error(r.status);}
+  catch(e){el.textContent="✗ Ошибка";el.className="token-status err";}
+}
+async function api(path,opts={}){return fetch(API+"/contents/"+path,{...opts,headers:{Authorization:"token "+tok(),Accept:"application/vnd.github.v3+json",...opts.headers}});}
+function toast(m,t="ok"){const e=document.getElementById("toast");e.textContent=m;e.className="toast "+t+" show";setTimeout(()=>e.classList.remove("show"),3500);}
+function showOv(s,m=""){document.getElementById("ov-step").textContent=s;document.getElementById("ov-msg").textContent=m;document.getElementById("overlay").classList.add("show");}
+function hideOv(){document.getElementById("overlay").classList.remove("show");}
+function b64enc(s){return btoa(unescape(encodeURIComponent(s)));}
+function b64dec(s){return decodeURIComponent(escape(atob(s.replace(/\n/g,""))));}
 
-let verifyTimer;
-function scheduleVerify() { clearTimeout(verifyTimer); verifyTimer = setTimeout(verifyToken, 800); }
+// ── Список выставок ──
+async function loadExhibitions(){
+  state.view="exhibitions";
+  document.getElementById("breadcrumb").innerHTML='<span>Выставки</span>';
+  const view=document.getElementById("view");
+  view.innerHTML='<div class="section-header"><h2>Выставки</h2></div><div id="exhib-list">Загрузка...</div>';
+  // Ищем все config.json в папках художник/выставка через дерево
+  try{
+    const ref=await(await fetch(API+"/git/refs/heads/main",{headers:{Authorization:"token "+tok()}})).json();
+    const tree=await(await fetch(API+"/git/trees/"+ref.object.sha+"?recursive=1",{headers:{Authorization:"token "+tok()}})).json();
+    const configs=tree.tree.filter(t=>t.path.match(/^[^/]+\/[^/]+\/config\.json$/));
+    const list=document.getElementById("exhib-list");
+    if(!configs.length){list.innerHTML='<div style="color:var(--muted);font-size:13px;">Нет выставок</div>';}
+    else{
+      list.innerHTML="";
+      for(const c of configs){
+        const parts=c.path.split("/");
+        const artist=parts[0],slug=parts[1];
+        let title=slug,count=0;
+        try{const cfg=await(await fetch(RAW+c.path+"?v="+Date.now())).json();title=cfg.title||slug;count=(cfg.artworks||[]).length;}catch(e){}
+        const card=document.createElement("div");
+        card.className="card";
+        card.innerHTML=`<div class="card-header" onclick="openExhibition('${artist}','${slug}')">
+          <div class="thumb-empty">🖼</div>
+          <div class="card-meta"><div style="font-size:14px;font-weight:500;">${title}</div>
+          <div class="sub">${artist}/${slug} · ${count} сцен</div></div>
+          <a class="btn btn-outline" href="https://ar.vr-in.net/${artist}/${slug}/" target="_blank" onclick="event.stopPropagation()">👁</a>
+        </div>`;
+        list.appendChild(card);
+      }
+    }
+  }catch(e){document.getElementById("exhib-list").innerHTML='<div style="color:#f87171;">Ошибка: '+e.message+'</div>';}
 
-async function verifyToken() {
-  const el = document.getElementById("token-status");
-  if (!tok()) { el.textContent = ""; return; }
-  el.textContent = "Проверяю..."; el.className = "token-status";
-  try {
-    const r = await ghApi("config.js");
-    if (r.ok) {
-      el.textContent = "✓ Подключён"; el.className = "token-status ok";
-      localStorage.setItem("vrin_tok", tok());
-      // Триггерим Google Password Manager через submit события
-      try {
-        const form = document.getElementById("token-form");
-        // Создаём фейковый submit чтобы браузер предложил сохранить
-        const event = new Event("submit", { cancelable: true, bubbles: true });
-        // Уже preventDefault внутри onsubmit, но браузер увидит попытку логина
-      } catch(e) {}
-      loadConfig();
-    } else throw new Error(r.status);
-  } catch(e) { el.textContent = "✗ Ошибка"; el.className = "token-status err"; }
+  view.innerHTML+=`<div class="new-exhib">
+    <div class="hint">Новая выставка — адрес будет ar.vr-in.net/художник/название</div>
+    <input id="new-artist" placeholder="художник (латиницей, напр. suliaeva)">
+    <input id="new-slug" placeholder="название (латиницей, напр. themonsterswecarry)">
+    <input id="new-title" placeholder="Заголовок (любой, напр. The Monsters We Carry)">
+    <button class="btn btn-blue" onclick="createExhibition()">＋ Создать выставку</button>
+  </div>`;
 }
 
-async function ghApi(path, opts={}) {
-  const headers = { Authorization: "token " + tok(), Accept: "application/vnd.github.v3+json", ...opts.headers };
-  return fetch(API_BASE + "/contents/" + path, { ...opts, headers });
+async function createExhibition(){
+  const artist=document.getElementById("new-artist").value.trim().toLowerCase().replace(/[^a-z0-9-]/g,"");
+  const slug=document.getElementById("new-slug").value.trim().toLowerCase().replace(/[^a-z0-9-]/g,"");
+  const title=document.getElementById("new-title").value.trim()||slug;
+  if(!artist||!slug){toast("Заполни художника и название",  "err");return;}
+  showOv("Создание выставки...");
+  try{
+    const cfg={artist,slug,title,artworks:[]};
+    const path=`${artist}/${slug}/config.json`;
+    await api(path,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"Create exhibition "+artist+"/"+slug,content:b64enc(JSON.stringify(cfg,null,2))})});
+    // viewer.js + index.html копируем из существующей выставки-шаблона
+    const viewerJs=await(await fetch(RAW+"suliaeva/themonsterswecarry/viewer.js")).text();
+    const indexHtml=(await(await fetch(RAW+"suliaeva/themonsterswecarry/index.html")).text()).replace(/<title>.*<\/title>/,`<title>${title} — AR</title>`);
+    await api(`${artist}/${slug}/viewer.js`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"viewer",content:b64enc(viewerJs)})});
+    await api(`${artist}/${slug}/index.html`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"index",content:b64enc(indexHtml)})});
+    toast("Выставка создана");
+    openExhibition(artist,slug);
+  }catch(e){toast("Ошибка: "+e.message,"err");}
+  hideOv();
 }
 
-function showToast(msg, type="ok") {
-  const el = document.getElementById("toast");
-  el.textContent = msg; el.className = "toast " + type + " show";
-  setTimeout(() => el.classList.remove("show"), 3500);
+// ── Открыть выставку ──
+async function openExhibition(artist,slug){
+  state.view="scenes";state.exhibition={artist,slug};
+  document.getElementById("breadcrumb").innerHTML=`<a onclick="loadExhibitions()">Выставки</a><span class="sep">/</span><span>${artist}/${slug}</span>`;
+  const view=document.getElementById("view");
+  view.innerHTML='Загрузка...';
+  const path=`${artist}/${slug}/config.json`;
+  const r=await api(path);
+  if(!r.ok){view.innerHTML='<div style="color:#f87171;">config.json не найден</div>';return;}
+  const data=await r.json();
+  state.configSha=data.sha;
+  state.config=JSON.parse(b64dec(data.content));
+  renderScenes();
 }
 
-function showProgress(step, msg="") {
-  document.getElementById("progress-step").textContent = step;
-  document.getElementById("progress-msg").textContent = msg;
-  document.getElementById("progress-overlay").classList.add("show");
-}
-function hideProgress() { document.getElementById("progress-overlay").classList.remove("show"); }
-
-let config = { artworks: [] };
-let configSha = null;
-
-async function loadConfig() {
-  try {
-    const r = await ghApi("config.js");
-    if (!r.ok) return;
-    const data = await r.json();
-    configSha = data.sha;
-    const text = decodeURIComponent(escape(atob(data.content.replace(/\n/g,""))));
-    const m = text.match(/EXHIBITION_CONFIG\s*=\s*(\{[\s\S]*\})\s*;?\s*$/m);
-    if (!m) return;
-    config = JSON.parse(m[1]);
-    renderScenes();
-  } catch(e) { console.error("loadConfig", e); }
+function renderScenes(){
+  const c=state.config;const{artist,slug}=state.exhibition;
+  const view=document.getElementById("view");
+  view.innerHTML=`<div class="section-header"><h2>Сцены — ${c.title}</h2><span class="count">${c.artworks.length}</span></div>
+    <div class="compile-bar"><button class="compile-btn" id="cbtn" onclick="triggerCompile()">🔄 Скомпилировать и опубликовать</button>
+    <span style="font-size:11px;color:var(--muted);">после изменений нажми чтобы обновить</span></div>
+    <div id="scenes"></div>
+    <div class="add-card" onclick="addScene()"><div class="icon">＋</div>Добавить сцену</div>`;
+  const list=document.getElementById("scenes");
+  c.artworks.forEach((a,i)=>list.appendChild(buildSceneCard(a,i,artist,slug)));
 }
 
-async function saveConfig(msg) {
-  // Используем JSON.stringify — даёт валидный JSON, который потом парсим обратно через JSON.parse
-  const text = "// Конфигурация AR-выставки\nconst EXHIBITION_CONFIG = " + JSON.stringify(config, null, 2) + ";";
-  const r = await ghApi("config.js", {
-    method: "PUT", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message: msg, content: btoa(unescape(encodeURIComponent(text))), sha: configSha })
-  });
-  if (!r.ok) throw new Error("Config save failed " + r.status);
-  const d = await r.json();
-  configSha = d.content.sha;
-}
-
-function renderScenes() {
-  document.getElementById("scene-count").textContent = config.artworks.length;
-  const list = document.getElementById("scenes-list");
-  list.innerHTML = "";
-  config.artworks.forEach((a, i) => list.appendChild(buildCard(a, i)));
-}
-
-function buildCard(a, i) {
-  const card = document.createElement("div");
-  card.className = "scene-card";
-  card.id = "card-" + a.id;
-  const hasJpg = !!a.target;
-  const hasGlb = !!a.model;
-  const hasMp3 = !!a.audio;
-
-  card.innerHTML = `
-    <div class="scene-card-header" onclick="toggleCard('${a.id}')">
-      ${hasJpg
-        ? `<img class="scene-thumb" src="${RAW + a.target}?v=${Date.now()}" onerror="this.outerHTML='<div class=\\"scene-thumb-empty\\">🖼</div>'">`
-        : `<div class="scene-thumb-empty">🖼</div>`}
-      <div class="scene-meta">
-        <input class="scene-name-input" value="${a.title}" placeholder="Название сцены"
-          onclick="event.stopPropagation()"
-          onblur="renameScene('${a.id}', this.value)">
-        <div class="scene-badges">
-          <span class="badge ${hasJpg?'ok':'missing'}">JPG ${hasJpg?'✓':'✗'}</span>
-          <span class="badge ${hasGlb?'ok':'missing'}">GLB ${hasGlb?'✓':'✗'}</span>
-          <span class="badge ${hasMp3?'ok':'optional'}">MP3 ${hasMp3?'✓':'—'}</span>
-        </div>
-      </div>
-      <div onclick="event.stopPropagation()">
-        <button class="btn btn-red" onclick="deleteScene('${a.id}')">✕</button>
-      </div>
-    </div>
-    <div class="scene-body" id="body-${a.id}">
-      <div class="file-row">
-        <div class="file-label"><div class="type">Якорь</div><div class="ext">JPG</div></div>
-        <div class="file-current">
-          ${hasJpg ? `<div class="fname">${a.target.split('/').pop()}</div>` : `<div class="empty">не загружен</div>`}
-        </div>
-        <div class="file-input-wrap">
-          <button class="btn btn-outline">⬆ Загрузить</button>
-          <input type="file" accept=".jpg,.jpeg" onchange="uploadFile('${a.id}','jpg',this)">
-        </div>
-      </div>
-      <div class="file-row">
-        <div class="file-label"><div class="type">Модель</div><div class="ext">GLB</div></div>
-        <div class="file-current">
-          ${hasGlb ? `<div class="fname">${a.model.split('/').pop()}</div>` : `<div class="empty">не загружена</div>`}
-        </div>
-        <label class="glb-options" title="Сжать модель через Draco для быстрой загрузки на телефоне">
-          <input type="checkbox" id="opt-${a.id}"> Оптимизировать
-        </label>
-        <div class="file-input-wrap">
-          <button class="btn btn-outline">⬆ Загрузить</button>
-          <input type="file" accept=".glb" onchange="uploadFile('${a.id}','glb',this)">
-        </div>
-      </div>
-      <div class="file-row">
-        <div class="file-label"><div class="type">Звук</div><div class="ext">MP3 / необяз.</div></div>
-        <div class="file-current">
-          ${hasMp3 ? `<div class="fname">${a.audio.split('/').pop()}</div>` : `<div class="empty">не загружен</div>`}
-        </div>
-        <div style="display:flex;gap:0.4rem;flex-shrink:0;">
-          <div class="file-input-wrap">
-            <button class="btn btn-outline">⬆ Загрузить</button>
-            <input type="file" accept=".mp3,.wav,.ogg" onchange="uploadFile('${a.id}','mp3',this)">
-          </div>
-          ${hasMp3 ? `<button class="btn btn-red" onclick="removeAudio('${a.id}')">✕</button>` : ''}
-        </div>
-      </div>
+function buildSceneCard(a,i,artist,slug){
+  const base=RAW+artist+"/"+slug+"/";
+  const card=document.createElement("div");card.className="card";card.id="card-"+a.id;
+  const hasJpg=!!a.target,hasGlb=!!a.model,hasMp3=!!a.audio;
+  card.innerHTML=`<div class="card-header" onclick="toggleCard('${a.id}')">
+    ${hasJpg?`<img class="thumb" src="${base+a.target}?v=${Date.now()}" onerror="this.outerHTML='<div class=\\'thumb-empty\\'>🖼</div>'">`:`<div class="thumb-empty">🖼</div>`}
+    <div class="card-meta"><input class="name-input" value="${a.title}" onclick="event.stopPropagation()" onblur="renameScene('${a.id}',this.value)">
+    <div class="badges"><span class="badge ${hasJpg?'ok':'missing'}">JPG ${hasJpg?'✓':'✗'}</span><span class="badge ${hasGlb?'ok':'missing'}">GLB ${hasGlb?'✓':'✗'}</span><span class="badge ${hasMp3?'ok':'optional'}">MP3 ${hasMp3?'✓':'—'}</span></div></div>
+    <div onclick="event.stopPropagation()"><button class="btn btn-red" onclick="deleteScene('${a.id}')">✕</button></div></div>
+    <div class="card-body" id="body-${a.id}">
+      <div class="file-row"><div class="file-label"><div class="type">Якорь</div><div class="ext">JPG</div></div>
+        <div class="file-current">${hasJpg?`<div class="fname">${a.target.split('/').pop()}</div>`:`<div class="empty">не загружен</div>`}</div>
+        <div class="file-input-wrap"><button class="btn btn-outline">⬆</button><input type="file" accept=".jpg,.jpeg" onchange="uploadFile('${a.id}','jpg',this)"></div></div>
+      <div class="file-row"><div class="file-label"><div class="type">Модель</div><div class="ext">GLB</div></div>
+        <div class="file-current">${hasGlb?`<div class="fname">${a.model.split('/').pop()}</div>`:`<div class="empty">не загружена</div>`}</div>
+        <label class="glb-opt" title="Сжать Draco"><input type="checkbox" id="opt-${a.id}"> Оптимизировать</label>
+        <div class="file-input-wrap"><button class="btn btn-outline">⬆</button><input type="file" accept=".glb" onchange="uploadFile('${a.id}','glb',this)"></div></div>
+      <div class="file-row"><div class="file-label"><div class="type">Звук</div><div class="ext">MP3</div></div>
+        <div class="file-current">${hasMp3?`<div class="fname">${a.audio.split('/').pop()}</div>`:`<div class="empty">не загружен</div>`}</div>
+        <div style="display:flex;gap:0.4rem;"><div class="file-input-wrap"><button class="btn btn-outline">⬆</button><input type="file" accept=".mp3,.wav,.ogg" onchange="uploadFile('${a.id}','mp3',this)"></div>
+        ${hasMp3?`<button class="btn btn-red" onclick="removeAudio('${a.id}')">✕</button>`:''}</div></div>
     </div>`;
   return card;
 }
+function toggleCard(id){const b=document.getElementById("body-"+id),c=document.getElementById("card-"+id),o=b.classList.contains("open");document.querySelectorAll(".card-body").forEach(x=>x.classList.remove("open"));document.querySelectorAll(".card").forEach(x=>x.classList.remove("selected"));if(!o){b.classList.add("open");c.classList.add("selected");}}
 
-function toggleCard(id) {
-  const body = document.getElementById("body-"+id);
-  const card = document.getElementById("card-"+id);
-  const open = body.classList.contains("open");
-  document.querySelectorAll(".scene-body").forEach(b=>b.classList.remove("open"));
-  document.querySelectorAll(".scene-card").forEach(c=>c.classList.remove("selected"));
-  if (!open) { body.classList.add("open"); card.classList.add("selected"); }
+function path(p){return state.exhibition.artist+"/"+state.exhibition.slug+"/"+p;}
+
+async function saveConfig(msg){
+  const txt=JSON.stringify(state.config,null,2);
+  const r=await api(path("config.json"),{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:msg,content:b64enc(txt),sha:state.configSha})});
+  if(!r.ok){if(r.status===409){throw new Error("Конфликт — обнови страницу");}throw new Error("Save "+r.status);}
+  state.configSha=(await r.json()).content.sha;
+}
+async function addScene(){
+  const id="scene-"+Date.now().toString(36);
+  state.config.artworks.push({id,title:"Сцена "+(state.config.artworks.length+1),target:"",model:"",position:{x:0,y:0,z:0},scale:0.06,rotation:{x:0,y:0,z:0}});
+  showOv("Сохранение...");try{await saveConfig("Add scene");renderScenes();toast("Сцена добавлена");}catch(e){toast(e.message,"err");}hideOv();
+}
+async function renameScene(id,title){const a=state.config.artworks.find(x=>x.id===id);if(!a||a.title===title)return;a.title=title;try{await saveConfig("Rename");}catch(e){toast(e.message,"err");}}
+async function deleteScene(id){
+  if(!confirm("Удалить сцену?"))return;
+  const a=state.config.artworks.find(x=>x.id===id);if(!a)return;
+  showOv("Удаление...");
+  async function del(p){if(!p)return;const r=await api(path(p));if(!r.ok)return;const d=await r.json();await api(path(p),{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"del",sha:d.sha})});}
+  try{await del(a.target);await del(a.model);if(a.audio)await del(a.audio);state.config.artworks=state.config.artworks.filter(x=>x.id!==id);await saveConfig("Delete scene");renderScenes();toast("Удалено");}catch(e){toast(e.message,"err");}hideOv();
+}
+async function removeAudio(id){
+  const a=state.config.artworks.find(x=>x.id===id);if(!a||!a.audio)return;
+  showOv("Удаление звука...");
+  try{const r=await api(path(a.audio));if(r.ok){const d=await r.json();await api(path(a.audio),{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"del audio",sha:d.sha})});}delete a.audio;delete a.audioLoop;delete a.audioVolume;await saveConfig("Remove audio");renderScenes();toast("Звук удалён");}catch(e){toast(e.message,"err");}hideOv();
+}
+async function uploadFile(sceneId,type,input){
+  const file=input.files[0];if(!file)return;
+  const a=state.config.artworks.find(x=>x.id===sceneId);if(!a)return;
+  const ext=file.name.split('.').pop().toLowerCase();
+  let optimize=false;
+  if(type==='glb'){const cb=document.getElementById("opt-"+sceneId);optimize=cb&&cb.checked;}
+  let rel;
+  if(type==='jpg')rel="assets/targets/"+sceneId+".jpg";
+  else if(type==='glb')rel=optimize?"assets/models/raw/"+sceneId+".glb":"assets/models/"+sceneId+".glb";
+  else rel="assets/audio/"+sceneId+"."+ext;
+  showOv("Загрузка "+file.name,(file.size/1024/1024).toFixed(1)+" MB"+(optimize?" · оптимизация":""));
+  try{
+    const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=rej;r.readAsDataURL(file);});
+    const check=await api(path(rel));const sha=check.ok?(await check.json()).sha:null;
+    const body={message:"upload "+rel,content:b64};if(sha)body.sha=sha;
+    const r=await api(path(rel),{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    if(!r.ok)throw new Error("Upload "+r.status);
+    if(type==='jpg')a.target=rel;
+    else if(type==='glb')a.model="assets/models/"+sceneId+".glb";
+    else{a.audio=rel;a.audioLoop=true;a.audioVolume=0.8;}
+    showOv("Сохранение конфига...");await saveConfig("Update "+sceneId);renderScenes();toast("Загружено: "+file.name);
+  }catch(e){toast(e.message,"err");}hideOv();
 }
 
-async function addScene() {
-  const id = "scene-" + Date.now().toString(36);
-  config.artworks.push({ id, title: "Сцена "+(config.artworks.length+1), target:"", model:"", position:{x:0,y:0,z:0}, scale:0.06, rotation:{x:0,y:0,z:0} });
-  showProgress("Сохранение...");
-  try { await saveConfig("Admin: add scene"); renderScenes(); showToast("Сцена добавлена"); }
-  catch(e) { showToast(e.message,"err"); }
-  hideProgress();
+async function triggerCompile(){
+  const btn=document.getElementById("cbtn");btn.disabled=true;btn.textContent="Запускаю...";
+  try{
+    const r=await fetch(API+"/actions/workflows/compile-targets.yml/dispatches",{method:"POST",headers:{Authorization:"token "+tok(),"Content-Type":"application/json"},body:JSON.stringify({ref:"main",inputs:{exhibition:state.exhibition.artist+"/"+state.exhibition.slug}})});
+    if(r.ok||r.status===204){toast("Компиляция запущена! ~2-3 мин");setTimeout(loadRuns,3000);}else throw new Error(r.status);
+  }catch(e){toast("Ошибка: "+e.message,"err");}
+  btn.disabled=false;btn.textContent="🔄 Скомпилировать и опубликовать";
+}
+async function loadRuns(){
+  if(!tok())return;
+  try{const r=await fetch(API+"/actions/runs?per_page=6",{headers:{Authorization:"token "+tok()}});if(!r.ok)return;const data=await r.json();
+    const el=document.getElementById("runs-list");
+    if(!data.workflow_runs.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;">Нет сборок</div>';return;}
+    el.innerHTML=data.workflow_runs.map(run=>{const s=run.conclusion||run.status;const t=new Date(run.updated_at).toLocaleString('ru',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'});return `<div class="run-item"><div class="dot ${s}"></div><div class="run-name">${run.name} #${run.run_number}</div><div class="run-time">${t}</div></div>`;}).join('');
+    if(data.workflow_runs.some(r=>r.status==='in_progress'||r.status==='queued'))setTimeout(loadRuns,10000);
+  }catch(e){}
 }
 
-async function renameScene(id, title) {
-  const a = config.artworks.find(x=>x.id===id);
-  if (!a || a.title===title) return;
-  a.title = title;
-  try { await saveConfig("Admin: rename "+id); }
-  catch(e) { showToast("Ошибка: "+e.message,"err"); }
-}
-
-async function deleteScene(id) {
-  if (!confirm("Удалить сцену?")) return;
-  const a = config.artworks.find(x=>x.id===id);
-  if (!a) return;
-  showProgress("Удаление...");
-  async function del(path) {
-    if (!path) return;
-    const r = await ghApi(path);
-    if (!r.ok) return;
-    const d = await r.json();
-    await ghApi(path, { method:"DELETE", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({message:"Admin: delete "+path, sha:d.sha}) });
-  }
-  try {
-    await del(a.target);
-    await del(a.model);
-    // Также удаляем raw версию если есть
-    if (a.model) {
-      const rawPath = a.model.replace("assets/models/", "assets/models/raw/");
-      await del(rawPath);
-    }
-    if (a.audio) await del(a.audio);
-    config.artworks = config.artworks.filter(x=>x.id!==id);
-    await saveConfig("Admin: delete scene "+id);
-    renderScenes(); showToast("Сцена удалена");
-  } catch(e) { showToast("Ошибка: "+e.message,"err"); }
-  hideProgress();
-}
-
-async function removeAudio(id) {
-  const a = config.artworks.find(x=>x.id===id);
-  if (!a||!a.audio) return;
-  showProgress("Удаление звука...");
-  try {
-    const r = await ghApi(a.audio);
-    if (r.ok) { const d=await r.json(); await ghApi(a.audio,{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"Admin: remove audio",sha:d.sha})}); }
-    delete a.audio; delete a.audioLoop; delete a.audioVolume;
-    await saveConfig("Admin: remove audio "+id);
-    renderScenes(); showToast("Звук удалён");
-  } catch(e) { showToast("Ошибка: "+e.message,"err"); }
-  hideProgress();
-}
-
-async function uploadFile(sceneId, type, input) {
-  const file = input.files[0];
-  if (!file) return;
-  const a = config.artworks.find(x=>x.id===sceneId);
-  if (!a) return;
-  const ext = file.name.split('.').pop().toLowerCase();
-
-  // Чекбокс «Оптимизировать» — только для GLB
-  let optimize = false;
-  if (type === 'glb') {
-    const checkbox = document.getElementById("opt-" + sceneId);
-    optimize = checkbox ? checkbox.checked : false;
-  }
-
-  let path;
-  if (type==='jpg') path = "assets/targets/"+sceneId+".jpg";
-  else if (type==='glb') {
-    // Если оптимизация → кладём в raw/, Action обработает и положит финальный в assets/models/
-    // Если нет → сразу в assets/models/
-    path = optimize ? "assets/models/raw/"+sceneId+".glb" : "assets/models/"+sceneId+".glb";
-  }
-  else path = "assets/audio/"+sceneId+"."+ext;
-
-  showProgress("Загрузка "+file.name, (file.size/1024/1024).toFixed(1)+" MB" + (optimize ? " · оптимизация после загрузки" : ""));
-  try {
-    const b64 = await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result.split(",")[1]); r.onerror=rej; r.readAsDataURL(file); });
-
-    // Если GLB и НЕ оптимизация — удаляем raw версию, если она была
-    if (type === 'glb' && !optimize) {
-      const rawPath = "assets/models/raw/"+sceneId+".glb";
-      try {
-        const checkRaw = await ghApi(rawPath);
-        if (checkRaw.ok) {
-          const rawData = await checkRaw.json();
-          await ghApi(rawPath, { method:"DELETE", headers:{"Content-Type":"application/json"},
-            body: JSON.stringify({message:"Admin: remove raw "+sceneId, sha:rawData.sha}) });
-        }
-      } catch(e) {}
-    }
-    // Если оптимизация — удаляем уже оптимизированный, чтобы Action перезаписал
-    if (type === 'glb' && optimize) {
-      const optPath = "assets/models/"+sceneId+".glb";
-      try {
-        const checkOpt = await ghApi(optPath);
-        if (checkOpt.ok) {
-          const optData = await checkOpt.json();
-          await ghApi(optPath, { method:"DELETE", headers:{"Content-Type":"application/json"},
-            body: JSON.stringify({message:"Admin: clear old "+sceneId, sha:optData.sha}) });
-        }
-      } catch(e) {}
-    }
-
-    const check = await ghApi(path);
-    const sha = check.ok ? (await check.json()).sha : null;
-    const body = { message:"Admin: upload "+path, content:b64 };
-    if (sha) body.sha = sha;
-    const r = await ghApi(path, { method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
-    if (!r.ok) throw new Error("Upload error "+r.status);
-
-    if (type==='jpg') a.target = path;
-    else if (type==='glb') {
-      // model в конфиге всегда указывает на assets/models/, даже если файл лежит в raw/ — Action его обработает
-      a.model = "assets/models/"+sceneId+".glb";
-    }
-    else { a.audio=path; a.audioLoop=true; a.audioVolume=0.8; }
-
-    showProgress("Сохранение конфига...");
-    await saveConfig("Admin: update "+sceneId+" "+type);
-    renderScenes();
-    showToast("Загружено: "+file.name + (optimize ? " (запущена оптимизация)" : ""));
-    if (optimize) setTimeout(loadRuns, 3000);
-  } catch(e) { showToast("Ошибка: "+e.message,"err"); }
-  hideProgress();
-}
-
-async function triggerCompile() {
-  const btn = document.getElementById("compile-btn");
-  btn.disabled=true; btn.textContent="Запускаю...";
-  try {
-    const r = await fetch(API_BASE+"/actions/workflows/compile-targets.yml/dispatches", {
-      method:"POST",
-      headers:{Authorization:"token "+tok(),"Content-Type":"application/json"},
-      body:JSON.stringify({ref:"main"})
-    });
-    if (r.ok||r.status===204) { showToast("Компиляция запущена! ~2-3 мин"); setTimeout(loadRuns,3000); }
-    else throw new Error(r.status);
-  } catch(e) { showToast("Ошибка: "+e.message,"err"); }
-  btn.disabled=false; btn.textContent="Скомпилировать и опубликовать";
-}
-
-async function loadRuns() {
-  if (!tok()) return;
-  try {
-    const r = await fetch(API_BASE+"/actions/runs?per_page=7", {headers:{Authorization:"token "+tok()}});
-    if (!r.ok) return;
-    const data = await r.json();
-    const el = document.getElementById("runs-list");
-    if (!data.workflow_runs.length) { el.innerHTML='<div style="color:var(--muted);font-size:12px;">Нет сборок</div>'; return; }
-    el.innerHTML = data.workflow_runs.map(run=>{
-      const s = run.conclusion||run.status;
-      const t = new Date(run.updated_at).toLocaleString('ru',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'});
-      return `<div class="run-item"><div class="dot ${s}"></div><div class="run-name">${run.name} <span class="run-num">#${run.run_number}</span></div><div class="run-time">${t}</div></div>`;
-    }).join('');
-    if (data.workflow_runs.some(r=>r.status==='in_progress'||r.status==='queued')) setTimeout(loadRuns,10000);
-  } catch(e) {}
-}
-
-window.addEventListener("load", () => {
-  const saved = localStorage.getItem("vrin_tok");
-  if (saved) { document.getElementById("gh-token").value=saved; verifyToken(); }
-  loadRuns(); setInterval(loadRuns, 30000);
-});
+window.addEventListener("load",()=>{const s=localStorage.getItem("vrin_tok");if(s){document.getElementById("gh-token").value=s;verifyToken();}});
 </script>
 </body>
 </html>
