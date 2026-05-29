@@ -46,14 +46,14 @@
       "target": "assets/targets/scene-mppbsuj9.jpg",
       "model": "assets/models/scene-mppbsuj9.glb",
       "position": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": -0.1,
+        "y": -0.36,
+        "z": -0.56
       },
-      "scale": 0.06,
+      "scale": 0.03,
       "rotation": {
         "x": 0,
-        "y": 0,
+        "y": -177.7,
         "z": 0
       }
     },
