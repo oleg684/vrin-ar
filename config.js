@@ -24,9 +24,9 @@ const EXHIBITION_CONFIG = {
       title: "Сцена 4",
       target: "assets/targets/scene-mppbsuj9.jpg",
       model: "assets/models/scene-mppbsuj9.glb",
-      position: { x: -0.14, y: -0.28, z: -2 },
+      position: { x: -0.1, y: -0.05, z: -2 },
       scale: 0.06,
-      rotation: { x: 0, y: -160.5, z: 0 }
+      rotation: { x: 0, y: -182.9, z: 0 }
     },
     {
       id: "scene-mppc6f2z",
