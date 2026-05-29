@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta http-equiv="Cache-Control" content="no-cache">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <title>Режим автора — AR</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    html,body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none;user-select:none;-webkit-user-select:none;}
+    body{background:#000;color:#fff;font-family:sans-serif;}
+    canvas{touch-action:none;display:block;}
+    #status-bar{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);padding:0.4rem 1rem;background:rgba(0,0,0,0.55);border-radius:999px;font-size:13px;pointer-events:none;transition:opacity 0.5s;z-index:100;}
+    #author-badge{position:fixed;top:1rem;left:1rem;padding:0.3rem 0.7rem;background:rgba(37,99,235,0.85);border-radius:6px;font-size:11px;z-index:100;pointer-events:none;}
+    #author-panel{position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.88);padding:0.8rem;border-top:1px solid rgba(255,255,255,0.15);z-index:100;touch-action:manipulation;}
+    .hint{color:#aaa;font-size:11px;margin-bottom:0.5rem;display:flex;justify-content:space-between;}
+    .sliders{display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:0.6rem;}
+    .sr label{color:#aaa;font-size:11px;display:block;}
+    .sr input[type=range]{width:100%;margin-top:2px;touch-action:manipulation;}
+    .sr span{color:#fff;font-size:10px;}
+    .actions{display:flex;gap:0.4rem;}
+    .btn{padding:0.55rem 0.8rem;border:none;border-radius:8px;font-size:13px;cursor:pointer;touch-action:manipulation;}
+    .btn-primary{flex:1;background:#2563eb;color:#fff;}
+    .btn-secondary{background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2);}
+    #token-dialog{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);align-items:center;justify-content:center;z-index:200;touch-action:manipulation;}
+    .dlg{background:#1e1e1e;border-radius:12px;padding:1.5rem;width:85%;max-width:340px;}
+    .dlg h3{font-size:15px;margin-bottom:0.4rem;font-weight:500;}
+    .dlg p{color:#aaa;font-size:12px;margin-bottom:0.8rem;line-height:1.5;}
+    .dlg input{width:100%;padding:0.6rem;border-radius:6px;border:1px solid #444;background:#2a2a2a;color:#fff;font-size:13px;margin-bottom:0.8rem;box-sizing:border-box;}
+    .dlg-err{color:#f88;font-size:12px;margin-bottom:0.6rem;display:none;}
+    .dlg-actions{display:flex;gap:0.5rem;flex-wrap:wrap;}
+  </style>
+</head>
+<body>
+  <div id="status-bar">Загрузка...</div>
+  <div id="author-badge">✏️ Автор</div>
+  <div id="author-panel">
+    <div class="hint"><span>1 палец = вращение · 2 пальца = двигать/масштаб</span><span style="color:#fff;">Картина <span id="artwork-label">—</span></span></div>
+    <div class="sliders">
+      <div class="sr"><label>X</label><input id="inp-x" type="range" min="-3" max="3" step="0.01"><span id="val-x"></span></div>
+      <div class="sr"><label>Y</label><input id="inp-y" type="range" min="-3" max="3" step="0.01"><span id="val-y"></span></div>
+      <div class="sr"><label>Z</label><input id="inp-z" type="range" min="-2" max="2" step="0.01"><span id="val-z"></span></div>
+      <div class="sr"><label>Масштаб</label><input id="inp-scale" type="range" min="0.01" max="2" step="0.01"><span id="val-scale"></span></div>
+    </div>
+    <div class="actions"><button class="btn btn-primary" id="btn-save">💾 Сохранить</button><button class="btn btn-secondary" id="btn-reset">↺</button><button class="btn btn-secondary" id="btn-change-token">🔑</button></div>
+  </div>
+  <div id="token-dialog"><div class="dlg"><h3>GitHub токен</h3><p>Вводится один раз, хранится на устройстве.</p><input id="inp-token" type="password" placeholder="ghp_..."><div class="dlg-err" id="token-error"></div><div class="dlg-actions"><button class="btn btn-primary" id="btn-token-ok" style="flex:1">Сохранить</button><button class="btn btn-secondary" id="btn-token-cancel">Отмена</button><button class="btn btn-secondary" id="btn-token-clear">🗑</button></div></div></div>
+  <script>
+    document.addEventListener("touchstart",e=>{if(!e.target.closest("#author-panel,#token-dialog"))e.preventDefault();},{passive:false});
+    document.addEventListener("touchmove",e=>{if(!e.target.closest("#author-panel,#token-dialog"))e.preventDefault();},{passive:false});
+  </script>
+  <script type="importmap">
+  {"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/","mindar-image-three":"https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"}}
+  </script>
+  <script type="module" src="author.js"></script>
+</body>
+</html>
