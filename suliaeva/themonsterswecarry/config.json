@@ -63,14 +63,14 @@
       "target": "assets/targets/scene-mppc6f2z.jpg",
       "model": "assets/models/scene-mppc6f2z.glb",
       "position": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": -0.06,
+        "y": -0.82,
+        "z": -0.02
       },
-      "scale": 0.06,
+      "scale": 0.25,
       "rotation": {
         "x": 0,
-        "y": 0,
+        "y": -200.8,
         "z": 0
       }
     },
