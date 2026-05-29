@@ -9,14 +9,14 @@
       "target": "assets/targets/scene-mpo3rg4w.jpg",
       "model": "assets/models/scene-mpo3rg4w.glb",
       "position": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": -0.1,
+        "y": 0.22,
+        "z": 1.17
       },
       "scale": 0.06,
       "rotation": {
         "x": 0,
-        "y": 0,
+        "y": -101.8,
         "z": 0
       },
       "audio": "assets/audio/scene-mpo3rg4w.mp3",
