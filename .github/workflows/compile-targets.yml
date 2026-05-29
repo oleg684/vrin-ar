@@ -22,8 +22,8 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: '20'
       - name: Install deps
@@ -108,15 +108,30 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -B main
-          git add */*/assets/targets/targets.mind
-          if git diff --staged --quiet; then echo "Nothing"; exit 0; fi
-          git commit -m "Auto-compile targets.mind [skip ci]"
+          # Сохраняем сгенерированные файлы во временную папку
+          mkdir -p /tmp/generated
+          for f in */*/assets/targets/targets.mind; do
+            [ -f "$f" ] || continue
+            mkdir -p "/tmp/generated/$(dirname "$f")"
+            cp "$f" "/tmp/generated/$f"
+          done
           for i in 1 2 3 4 5; do
             git fetch origin main
-            # Наши скомпилированные .mind всегда побеждают при конфликте
-            git rebase -X ours origin/main || git rebase --abort
-            if git push origin main; then echo "Pushed"; exit 0; fi
-            sleep $((i*5))
+            git checkout -B main origin/main
+            # Возвращаем свежесгенерированные файлы поверх актуального main
+            CHANGED=0
+            for f in $(cd /tmp/generated && find . -type f); do
+              rel="${f#./}"
+              mkdir -p "$(dirname "$rel")"
+              cp "/tmp/generated/$rel" "$rel"
+              git add "$rel"
+              CHANGED=1
+            done
+            if [ "$CHANGED" = "0" ] || git diff --staged --quiet; then
+              echo "Nothing to commit"; exit 0
+            fi
+            git commit -m "Auto-compile targets.mind [skip ci]"
+            if git push origin main; then echo "Pushed on attempt $i"; exit 0; fi
+            echo "Push failed, retry $i"; sleep $((i*5))
           done
           exit 1
