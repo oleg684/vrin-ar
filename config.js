@@ -22,23 +22,6 @@ const EXHIBITION_CONFIG = {
       "audioVolume": 0.8
     },
     {
-      "id": "scene-mppbp3tj",
-      "title": "Сцена 2",
-      "target": "assets/targets/scene-mppbp3tj.jpg",
-      "model": "assets/models/scene-mppbp3tj.glb",
-      "position": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": 0.06,
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      }
-    },
-    {
       "id": "scene-mppbsee9",
       "title": "Сцена 3",
       "target": "assets/targets/scene-mppbsee9.jpg",
