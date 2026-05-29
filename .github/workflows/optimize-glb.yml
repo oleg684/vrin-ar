@@ -42,7 +42,9 @@ jobs:
           done
           for i in 1 2 3 4 5; do
             git fetch origin main
-            git checkout -B main origin/main
+            # Отбрасываем все локальные изменения (файлы уже сохранены в /tmp/generated)
+            git reset --hard origin/main
+            git clean -fd
             # Возвращаем свежесгенерированные файлы поверх актуального main
             CHANGED=0
             for f in $(cd /tmp/generated && find . -type f); do
