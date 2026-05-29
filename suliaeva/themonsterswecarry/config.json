@@ -80,14 +80,14 @@
       "target": "assets/targets/scene-mppc6qqk.jpg",
       "model": "assets/models/scene-mppc6qqk.glb",
       "position": {
-        "x": 0,
-        "y": 0,
+        "x": 0.36,
+        "y": 0.29,
         "z": 0
       },
       "scale": 0.06,
       "rotation": {
         "x": 0,
-        "y": 0,
+        "y": -91.2,
         "z": 0
       }
     },
