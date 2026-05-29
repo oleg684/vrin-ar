@@ -1,11 +1,16 @@
 name: Compile AR targets
 
 on:
+  workflow_dispatch:
+    inputs:
+      exhibition:
+        description: 'Путь выставки (художник/название). Пусто = все выставки'
+        required: false
+        default: ''
   push:
     paths:
-      - 'assets/targets/*.jpg'
-      - 'config.js'
-  workflow_dispatch:
+      - '*/*/config.json'
+      - '*/*/assets/targets/*.jpg'
 
 concurrency:
   group: repo-write
@@ -21,117 +26,94 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-
       - name: Install deps
         run: |
           npm install puppeteer
           pip install pillow
 
-      - name: Read config order
-        id: order
+      - name: Find exhibitions to compile
+        id: find
         run: |
           python3 - << 'PYEOF'
-          import re, json
-          with open('config.js') as f:
-              txt = f.read()
-          m = re.search(r'EXHIBITION_CONFIG\s*=\s*(\{.*\})\s*;?\s*$', txt, re.DOTALL)
-          if not m:
-              print("No config")
-              exit(1)
-          # JSON5-like: используем eval безопасно через json
-          # config.js — это JSON-совместимый объект (мы пишем через JSON.stringify)
-          cfg = json.loads(m.group(1))
-          order = [a['id'] for a in cfg['artworks'] if a.get('target')]
-          with open('/tmp/order.txt', 'w') as f:
-              f.write('\n'.join(order))
-          print("Order:", order)
+          import glob, os
+          target = "${{ github.event.inputs.exhibition }}".strip()
+          exhibitions = []
+          if target:
+              if os.path.exists(f"{target}/config.json"):
+                  exhibitions = [target]
+          else:
+              for cfg in glob.glob("*/*/config.json"):
+                  exhibitions.append(os.path.dirname(cfg))
+          with open("/tmp/exhibitions.txt","w") as f:
+              f.write("\n".join(exhibitions))
+          print("Will compile:", exhibitions)
           PYEOF
 
-      - name: Resize images in config order
-        run: |
-          python3 - << 'PYEOF'
-          from PIL import Image
-          import os
-          with open('/tmp/order.txt') as f:
-              ids = [l.strip() for l in f if l.strip()]
-          for idx, scene_id in enumerate(ids, 1):
-              src = f"assets/targets/{scene_id}.jpg"
-              if not os.path.exists(src):
-                  print(f"  SKIP: {src} not found")
-                  continue
-              img = Image.open(src)
-              img.thumbnail((1000, 1000), Image.LANCZOS)
-              # Префиксуем порядковым номером чтобы sort давал правильный порядок
-              dst = f"/tmp/{idx:03d}-{scene_id}.jpg"
-              img.save(dst, "JPEG", quality=85)
-              print(f"  {dst} ({os.path.getsize(dst)//1024}KB)")
-          PYEOF
-
-      - name: Compile targets.mind
+      - name: Compile each exhibition
         run: |
           node << 'JSEOF'
           const puppeteer = require('puppeteer');
           const fs = require('fs');
-          (async () => {
-            const browser = await puppeteer.launch({
-              headless: true,
-              args: ['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage']
+          const { execSync } = require('child_process');
+
+          const exhibitions = fs.readFileSync('/tmp/exhibitions.txt','utf8').split('\n').filter(Boolean);
+
+          async function compileOne(dir) {
+            const config = JSON.parse(fs.readFileSync(dir + '/config.json','utf8'));
+            const order = config.artworks.filter(a => a.target).map(a => a.id);
+            if (!order.length) { console.log('No targets in', dir); return; }
+
+            // Уменьшаем картинки в порядке конфига
+            const sharp = require('child_process');
+            fs.mkdirSync('/tmp/tg', { recursive: true });
+            execSync('rm -f /tmp/tg/*.jpg');
+            order.forEach((id, idx) => {
+              const src = `${dir}/assets/targets/${id}.jpg`;
+              if (!fs.existsSync(src)) { console.log('Missing', src); return; }
+              const dst = `/tmp/tg/${String(idx).padStart(3,'0')}-${id}.jpg`;
+              execSync(`python3 -c "from PIL import Image; im=Image.open('${src}'); im.thumbnail((1000,1000)); im.convert('RGB').save('${dst}','JPEG',quality=85)"`);
             });
+
+            const browser = await puppeteer.launch({ headless:true, args:['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage'] });
             const page = await browser.newPage();
             const client = await page.target().createCDPSession();
-            await client.send('Browser.setDownloadBehavior', {
-              behavior: 'allow', downloadPath: '/tmp/mindar-output'
-            });
-            fs.mkdirSync('/tmp/mindar-output', { recursive: true });
-            page.on('console', m => { if (!m.text().match(/GL|GPU|WebGL/)) console.log(m.text()); });
-            await page.goto('https://hiukim.github.io/mind-ar-js-doc/tools/compile', { waitUntil: 'networkidle2' });
-            const files = fs.readdirSync('/tmp')
-              .filter(f => /^\d{3}-.*\.jpg$/.test(f))
-              .sort()
-              .map(f => '/tmp/' + f);
-            console.log('Files in order:', files);
-            if (!files.length) { console.log('No files!'); process.exit(1); }
+            await client.send('Browser.setDownloadBehavior', { behavior:'allow', downloadPath:'/tmp/out' });
+            fs.mkdirSync('/tmp/out', { recursive: true });
+            try { fs.unlinkSync('/tmp/out/targets.mind'); } catch(e) {}
+            page.on('console', m => { if(!m.text().match(/GL|GPU|WebGL/)) console.log(m.text()); });
+            await page.goto('https://hiukim.github.io/mind-ar-js-doc/tools/compile', { waitUntil:'networkidle2' });
+            const files = fs.readdirSync('/tmp/tg').sort().map(f => '/tmp/tg/'+f);
+            console.log(dir, '->', files.length, 'targets');
             const input = await page.$('input[type="file"]');
             await input.uploadFile(...files);
-            await new Promise(r => setTimeout(r, 3000));
-            await page.evaluate(() => {
-              for (const b of document.querySelectorAll('button'))
-                if (b.textContent.trim() === 'Start') { b.click(); return; }
-            });
-            console.log('Compiling', files.length, 'targets...');
-            await page.waitForFunction(() => {
-              for (const b of document.querySelectorAll('button'))
-                if (b.textContent.includes('Download')) return true;
-              return false;
-            }, { timeout: 300000 });
-            await page.evaluate(() => {
-              for (const b of document.querySelectorAll('button'))
-                if (b.textContent.includes('Download')) { b.click(); return; }
-            });
-            await new Promise(r => setTimeout(r, 6000));
-            fs.copyFileSync('/tmp/mindar-output/targets.mind', 'assets/targets/targets.mind');
-            console.log('Done:', fs.statSync('assets/targets/targets.mind').size, 'bytes');
+            await new Promise(r=>setTimeout(r,3000));
+            await page.evaluate(()=>{for(const b of document.querySelectorAll('button'))if(b.textContent.trim()==='Start'){b.click();return;}});
+            await page.waitForFunction(()=>{for(const b of document.querySelectorAll('button'))if(b.textContent.includes('Download'))return true;return false;},{timeout:300000});
+            await page.evaluate(()=>{for(const b of document.querySelectorAll('button'))if(b.textContent.includes('Download')){b.click();return;}});
+            await new Promise(r=>setTimeout(r,6000));
+            fs.copyFileSync('/tmp/out/targets.mind', dir + '/assets/targets/targets.mind');
+            console.log('Saved', dir + '/assets/targets/targets.mind', fs.statSync(dir+'/assets/targets/targets.mind').size, 'bytes');
             await browser.close();
+          }
+
+          (async () => {
+            for (const dir of exhibitions) {
+              console.log('=== Compiling', dir, '===');
+              await compileOne(dir);
+            }
           })();
           JSEOF
 
-      - name: Commit with retry
+      - name: Commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add assets/targets/targets.mind
-          if git diff --staged --quiet; then
-            echo "Nothing to commit"
-            exit 0
-          fi
+          git add */*/assets/targets/targets.mind
+          if git diff --staged --quiet; then echo "Nothing"; exit 0; fi
           git commit -m "Auto-compile targets.mind [skip ci]"
           for i in 1 2 3 4 5; do
             git pull --rebase origin main || true
-            if git push; then
-              echo "Pushed on attempt $i"
-              exit 0
-            fi
-            echo "Push failed, retry $i/5"
-            sleep $((i * 5))
+            if git push; then echo "Pushed"; exit 0; fi
+            sleep $((i*5))
           done
           exit 1
