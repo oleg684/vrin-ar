@@ -149,7 +149,7 @@ async function loadExhibitions(){
           <div class="thumb-empty">🖼</div>
           <div class="card-meta"><div style="font-size:14px;font-weight:500;">${title}</div>
           <div class="sub">${artist}/${slug} · ${count} сцен</div></div>
-          <a class="btn btn-outline" href="https://ar.vr-in.net/${artist}/${slug}/" target="_blank" onclick="event.stopPropagation()">👁</a>
+          <a class="btn btn-outline" href="https://ar.vr-in.net/${artist}/${slug}/" target="_blank" onclick="event.stopPropagation()" style="margin-right:0.3rem;">👁</a><a class="btn btn-outline" href="https://ar.vr-in.net/${artist}/${slug}/author.html" target="_blank" onclick="event.stopPropagation()">✏️</a>
         </div>`;
         list.appendChild(card);
       }
@@ -180,6 +180,10 @@ async function createExhibition(){
     const indexHtml=(await(await fetch(RAW+"suliaeva/themonsterswecarry/index.html")).text()).replace(/<title>.*<\/title>/,`<title>${title} — AR</title>`);
     await api(`${artist}/${slug}/viewer.js`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"viewer",content:b64enc(viewerJs)})});
     await api(`${artist}/${slug}/index.html`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"index",content:b64enc(indexHtml)})});
+    const authorJs=await(await fetch(RAW+"suliaeva/themonsterswecarry/author.js")).text();
+    const authorHtml=(await(await fetch(RAW+"suliaeva/themonsterswecarry/author.html")).text()).replace(/<title>.*<\/title>/,`<title>${title} — Автор</title>`);
+    await api(`${artist}/${slug}/author.js`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"author js",content:b64enc(authorJs)})});
+    await api(`${artist}/${slug}/author.html`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"author html",content:b64enc(authorHtml)})});
     toast("Выставка создана");
     openExhibition(artist,slug);
   }catch(e){toast("Ошибка: "+e.message,"err");}
@@ -205,6 +209,11 @@ function renderScenes(){
   const c=state.config;const{artist,slug}=state.exhibition;
   const view=document.getElementById("view");
   view.innerHTML=`<div class="section-header"><h2>Сцены — ${c.title}</h2><span class="count">${c.artworks.length}</span></div>
+    <div class="compile-bar" style="margin-top:0;margin-bottom:0.5rem;">
+      <a class="btn btn-outline" href="https://ar.vr-in.net/${artist}/${slug}/" target="_blank">👁 Зритель</a>
+      <a class="btn btn-outline" href="https://ar.vr-in.net/${artist}/${slug}/author.html" target="_blank">✏️ Автор</a>
+      <span style="font-size:11px;color:var(--muted);">ar.vr-in.net/${artist}/${slug}/</span>
+    </div>
     <div class="compile-bar"><button class="compile-btn" id="cbtn" onclick="triggerCompile()">🔄 Скомпилировать и опубликовать</button>
     <span style="font-size:11px;color:var(--muted);">после изменений нажми чтобы обновить</span></div>
     <div id="scenes"></div>
