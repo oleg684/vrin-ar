@@ -112,7 +112,7 @@
       "id": "scene-mpra77bw",
       "title": "Сцена 2",
       "target": "assets/targets/scene-mpra77bw.jpg",
-      "model": "",
+      "model": "assets/models/scene-mpra77bw.glb",
       "position": {
         "x": 0,
         "y": 0,
