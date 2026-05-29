@@ -53,7 +53,7 @@ const EXHIBITION_CONFIG = {
       model: "assets/models/scene-mppc6rze.glb",
       position: { x: 0, y: 0, z: 0 },
       scale: 0.06,
-      rotation: { x: 0, y: 0, z: 0 }
+      rotation: { x: 0, y: -92.4, z: 0 }
     },
     {
       id: "scene-mppc6uwc",
