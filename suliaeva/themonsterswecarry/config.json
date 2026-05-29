@@ -97,14 +97,14 @@
       "target": "assets/targets/scene-mppcccfs.jpg",
       "model": "assets/models/scene-mppcccfs.glb",
       "position": {
-        "x": 0,
-        "y": 0,
+        "x": 0.17,
+        "y": 0.02,
         "z": 0
       },
       "scale": 0.06,
       "rotation": {
         "x": 0,
-        "y": 0,
+        "y": -205.1,
         "z": 0
       }
     }
