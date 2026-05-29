@@ -29,14 +29,14 @@
       "target": "assets/targets/scene-mppbsee9.jpg",
       "model": "assets/models/scene-mppbsee9.glb",
       "position": {
-        "x": 0,
+        "x": 0.09,
         "y": 0,
-        "z": 0
+        "z": 1.68
       },
-      "scale": 0.06,
+      "scale": 0.09,
       "rotation": {
         "x": 0,
-        "y": 0,
+        "y": -91.5,
         "z": 0
       }
     },
