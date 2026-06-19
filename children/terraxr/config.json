@@ -7,7 +7,7 @@
       "id": "scene-mqkosx5b",
       "title": "Сцена 1",
       "target": "assets/targets/scene-mqkosx5b.jpg",
-      "model": "",
+      "model": "assets/models/scene-mqkosx5b.glb",
       "position": {
         "x": 0,
         "y": 0,
