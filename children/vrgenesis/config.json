@@ -2,5 +2,23 @@
   "artist": "children",
   "slug": "vrgenesis",
   "title": "VR Genesis: Запуск мира",
-  "artworks": []
+  "artworks": [
+    {
+      "id": "scene-mqkncg09",
+      "title": "Сцена 1",
+      "target": "",
+      "model": "",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": 0.06,
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    }
+  ]
 }
