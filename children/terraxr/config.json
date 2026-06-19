@@ -2,23 +2,5 @@
   "artist": "children",
   "slug": "terraxr",
   "title": "TERRA XR",
-  "artworks": [
-    {
-      "id": "scene-mqkn1pse",
-      "title": "Сцена 2",
-      "target": "assets/targets/scene-mqkn1pse.jpg",
-      "model": "assets/models/scene-mqkn1pse.glb",
-      "position": {
-        "x": -0.29,
-        "y": 0,
-        "z": 0
-      },
-      "scale": 0.06,
-      "rotation": {
-        "x": 0,
-        "y": -132,
-        "z": 0
-      }
-    }
-  ]
+  "artworks": []
 }
