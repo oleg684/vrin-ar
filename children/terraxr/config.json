@@ -4,23 +4,6 @@
   "title": "TERRA XR",
   "artworks": [
     {
-      "id": "scene-mqkn1nhj",
-      "title": "Сцена 1",
-      "target": "assets/targets/scene-mqkn1nhj.jpg",
-      "model": "assets/models/scene-mqkn1nhj.glb",
-      "position": {
-        "x": 0.55,
-        "y": -0.48,
-        "z": 0.09
-      },
-      "scale": 0.18,
-      "rotation": {
-        "x": 0,
-        "y": -134.8,
-        "z": 0
-      }
-    },
-    {
       "id": "scene-mqkn1pse",
       "title": "Сцена 2",
       "target": "assets/targets/scene-mqkn1pse.jpg",
