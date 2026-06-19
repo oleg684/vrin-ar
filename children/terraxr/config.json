@@ -24,7 +24,7 @@
       "id": "scene-mqkotofg",
       "title": "Сцена 2",
       "target": "assets/targets/scene-mqkotofg.jpg",
-      "model": "",
+      "model": "assets/models/scene-mqkotofg.glb",
       "position": {
         "x": 0,
         "y": 0,
