@@ -40,7 +40,7 @@
     {
       "id": "scene-mqkncink",
       "title": "Сцена 3",
-      "target": "",
+      "target": "assets/targets/scene-mqkncink.jpg",
       "model": "",
       "position": {
         "x": 0,
