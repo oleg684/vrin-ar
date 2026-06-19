@@ -74,7 +74,7 @@
     {
       "id": "scene-mqknclpt",
       "title": "Сцена 5",
-      "target": "",
+      "target": "assets/targets/scene-mqknclpt.jpg",
       "model": "",
       "position": {
         "x": 0,
