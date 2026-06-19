@@ -9,14 +9,14 @@
       "target": "assets/targets/scene-mqkn1nhj.jpg",
       "model": "assets/models/scene-mqkn1nhj.glb",
       "position": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.55,
+        "y": -0.48,
+        "z": 0.09
       },
-      "scale": 0.06,
+      "scale": 0.18,
       "rotation": {
         "x": 0,
-        "y": 0,
+        "y": -134.8,
         "z": 0
       }
     },
@@ -26,14 +26,14 @@
       "target": "assets/targets/scene-mqkn1pse.jpg",
       "model": "assets/models/scene-mqkn1pse.glb",
       "position": {
-        "x": 0,
+        "x": -0.29,
         "y": 0,
         "z": 0
       },
       "scale": 0.06,
       "rotation": {
         "x": 0,
-        "y": 0,
+        "y": -132,
         "z": 0
       }
     }
