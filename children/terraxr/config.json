@@ -19,23 +19,6 @@
         "y": -198.9,
         "z": 0
       }
-    },
-    {
-      "id": "scene-mqkotofg",
-      "title": "Сцена 2",
-      "target": "assets/targets/scene-mqkotofg.jpg",
-      "model": "assets/models/scene-mqkotofg.glb",
-      "position": {
-        "x": -0.29,
-        "y": 0,
-        "z": 1.11
-      },
-      "scale": 0.03,
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      }
     }
   ]
 }
