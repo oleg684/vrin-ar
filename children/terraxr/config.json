@@ -24,7 +24,7 @@
       "id": "scene-mqtil50l",
       "title": "Сцена 2",
       "target": "assets/targets/scene-mqtil50l.jpg",
-      "model": "",
+      "model": "assets/models/scene-mqtil50l.glb",
       "position": {
         "x": 0,
         "y": 0,
