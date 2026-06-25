@@ -5,7 +5,24 @@
   "artworks": [
     {
       "id": "scene-mqtjy0av",
-      "title": "Сцена 1",
+      "title": "Сцена 1 out",
+      "target": "",
+      "model": "",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": 0.06,
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "scene-mqtjy3hl",
+      "title": "Сцена 2",
       "target": "",
       "model": "",
       "position": {
