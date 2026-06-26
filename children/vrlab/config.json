@@ -41,7 +41,7 @@
       "id": "scene-mquz9gl0",
       "title": "Сцена 3",
       "target": "assets/targets/scene-mquz9gl0.jpg",
-      "model": "",
+      "model": "assets/models/scene-mquz9gl0.glb",
       "position": {
         "x": 0,
         "y": 0,
