@@ -75,7 +75,7 @@
       "id": "scene-mquz9mma",
       "title": "Сцена 6",
       "target": "assets/targets/scene-mquz9mma.jpg",
-      "model": "",
+      "model": "assets/models/scene-mquz9mma.glb",
       "position": {
         "x": 0,
         "y": 0,
