@@ -1,7 +1,7 @@
 {
   "id": "monument",
   "title": "Тестовый памятник",
-  "displayMode": "image",
+  "displayMode": "world",
   "content": [
     {
       "type": "video",
