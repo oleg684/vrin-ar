@@ -26,20 +26,15 @@ function tapGate() {
 }
 
 // Создаёт видео-элемент, готовый к воспроизведению на мобильных
-function makeVideo(src, loop) {
-  const v = document.createElement("video");
-  v.src = src;
-  v.loop = loop !== false;
-  v.muted = true;              // обязательно для автоплея
-  v.playsInline = true;
-  v.setAttribute("playsinline","");
-  v.setAttribute("webkit-playsinline","");
-  v.setAttribute("muted","");
-  v.crossOrigin = "anonymous";
-  v.preload = "auto";
-  // держим в DOM (скрыто) — иначе часть браузеров не декодирует кадры для текстуры
-  v.style.cssText = "position:fixed;width:2px;height:2px;opacity:0.01;pointer-events:none;left:-10px;top:-10px;";
-  document.body.appendChild(v);
+function makeVideo(src, loop){
+  const v=document.createElement("video");
+  v.src=src;v.loop=loop!==false;v.muted=true;v.playsInline=true;
+  v.setAttribute("playsinline","");v.setAttribute("muted","");
+  v.dataset.contentVideo="1";
+  v.crossOrigin="anonymous";v.preload="auto";
+  let holder=document.getElementById("content-videos");
+  if(!holder){holder=document.createElement("div");holder.id="content-videos";holder.style.cssText="position:fixed;width:0;height:0;overflow:hidden;";document.body.appendChild(holder);}
+  holder.appendChild(v);
   pendingVideos.push(v);
   return v;
 }
