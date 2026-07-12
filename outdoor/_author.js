@@ -128,9 +128,11 @@ function makeVideo(src){
   const v=document.createElement("video");
   v.src=src;v.loop=true;v.muted=true;v.playsInline=true;
   v.setAttribute("playsinline","");v.setAttribute("muted","");
+  v.dataset.contentVideo="1";
   v.crossOrigin="anonymous";v.preload="auto";
-  v.style.cssText="position:fixed;width:2px;height:2px;opacity:0.01;pointer-events:none;left:-10px;top:-10px;";
-  document.body.appendChild(v);
+  let holder=document.getElementById("content-videos");
+  if(!holder){holder=document.createElement("div");holder.id="content-videos";holder.style.cssText="position:fixed;width:0;height:0;overflow:hidden;";document.body.appendChild(holder);}
+  holder.appendChild(v);
   return v;
 }
 
