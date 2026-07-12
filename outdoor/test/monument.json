@@ -2,6 +2,13 @@
   "id": "monument",
   "title": "Тестовый памятник",
   "displayMode": "world",
-  "content": [],
+  "content": [
+    {
+      "type": "video",
+      "src": "assets/monument-mrhvw35j.mp4",
+      "mode": "plane",
+      "loop": true
+    }
+  ],
   "interactive": true
 }
