@@ -507,12 +507,27 @@ function renderContentList(ev,oid){
     else if(it.type==='video') thumb=`<video src="${base+it.src}#t=0.1" muted playsinline preload="metadata" style="width:48px;height:48px;object-fit:cover;border-radius:6px;background:#000;"></video>`;
     else thumb=`<div style="width:48px;height:48px;border-radius:6px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:22px;">🧊</div>`;
     const modeSel=it.type!=='model'?`<select onchange="updContentMode('${ev}','${oid}',${i},this.value)" style="font-size:11px;padding:0.2rem;"><option value="plane" ${it.mode==='plane'?'selected':''}>плоскость</option><option value="fullscreen" ${it.mode==='fullscreen'?'selected':''}>весь экран</option></select>`:'';
-    return `<div class="content-item"><div style="display:flex;gap:0.6rem;align-items:center;">
-      ${thumb}
-      <div style="flex:1;min-width:0;"><div style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${name}</div>
-      <div style="font-size:10px;color:var(--muted);">${it.type}</div></div>
-      <div style="display:flex;gap:0.4rem;align-items:center;">${modeSel}<button class="btn btn-red" style="font-size:11px;padding:0.2rem 0.5rem;" onclick="removeContent('${ev}','${oid}',${i})">✕</button></div></div></div>`;
+    const op=Math.round((it.opacity ?? 1)*100);
+    return `<div class="content-item">
+      <div style="display:flex;gap:0.6rem;align-items:center;">
+        ${thumb}
+        <div style="flex:1;min-width:0;"><div style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${name}</div>
+        <div style="font-size:10px;color:var(--muted);">${it.type}</div></div>
+        <div style="display:flex;gap:0.4rem;align-items:center;">${modeSel}<button class="btn btn-red" style="font-size:11px;padding:0.2rem 0.5rem;" onclick="removeContent('${ev}','${oid}',${i})">✕</button></div>
+      </div>
+      <div style="display:flex;gap:0.6rem;align-items:center;margin-top:0.5rem;">
+        <span style="font-size:11px;color:var(--muted);width:90px;">Прозрачность</span>
+        <input type="range" min="10" max="100" step="5" value="${op}" style="flex:1;" oninput="updContentOpacity('${ev}','${oid}',${i},this.value);this.nextElementSibling.textContent=this.value+'%'">
+        <span style="font-size:11px;color:var(--muted);width:38px;text-align:right;">${op}%</span>
+      </div>
+    </div>`;
   }).join('');
+}
+
+function updContentOpacity(ev,oid,i,val){
+  const st=window.__odCfg[oid];if(!st)return;
+  st.cfg.content[i].opacity=parseInt(val)/100;st.dirty=true;
+  markDirtyBadge(oid);
 }
 
 // ── Новый объект ──
