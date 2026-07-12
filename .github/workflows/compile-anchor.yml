@@ -1,0 +1,128 @@
+name: Compile outdoor anchor
+
+on:
+  workflow_dispatch:
+    inputs:
+      object:
+        description: 'Путь объекта (событие/объект)'
+        required: true
+
+concurrency:
+  group: repo-write
+  cancel-in-progress: false
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+      - name: Install deps
+        run: |
+          npm install puppeteer
+          pip install pillow
+
+      - name: Determine anchor source
+        id: src
+        run: |
+          python3 - << 'PYEOF'
+          import json, os
+          obj = "${{ github.event.inputs.object }}".strip()  # event/objectid
+          ev, oid = obj.split("/", 1)
+          cfg_path = f"outdoor/{ev}/{oid}.json"
+          with open(cfg_path) as f:
+              cfg = json.load(f)
+          # Источник якоря: QR или загруженная картинка
+          if cfg.get("useQrAsAnchor"):
+              src = f"outdoor/{ev}/{oid}.qr.png"
+          elif cfg.get("anchorImage"):
+              src = f"outdoor/{ev}/{cfg['anchorImage']}"
+          else:
+              print("Нет источника якоря"); exit(1)
+          with open("/tmp/anchor_info.txt","w") as f:
+              f.write(f"{ev}\n{oid}\n{src}")
+          print("Anchor source:", src)
+          PYEOF
+
+      - name: Resize anchor
+        run: |
+          python3 - << 'PYEOF'
+          from PIL import Image
+          lines = open("/tmp/anchor_info.txt").read().split("\n")
+          src = lines[2]
+          img = Image.open(src).convert("RGB")
+          img.thumbnail((1000,1000), Image.LANCZOS)
+          img.save("/tmp/anchor.jpg","JPEG",quality=90)
+          print("Resized", src)
+          PYEOF
+
+      - name: Compile .mind
+        run: |
+          node << 'JSEOF'
+          const puppeteer=require('puppeteer');const fs=require('fs');
+          (async()=>{
+            const browser=await puppeteer.launch({headless:true,args:['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage']});
+            const page=await browser.newPage();
+            const client=await page.target().createCDPSession();
+            await client.send('Browser.setDownloadBehavior',{behavior:'allow',downloadPath:'/tmp/out'});
+            fs.mkdirSync('/tmp/out',{recursive:true});
+            page.on('console',m=>{if(!m.text().match(/GL|GPU|WebGL/))console.log(m.text());});
+            await page.goto('https://hiukim.github.io/mind-ar-js-doc/tools/compile',{waitUntil:'networkidle2'});
+            const input=await page.$('input[type="file"]');
+            await input.uploadFile('/tmp/anchor.jpg');
+            await new Promise(r=>setTimeout(r,3000));
+            await page.evaluate(()=>{for(const b of document.querySelectorAll('button'))if(b.textContent.trim()==='Start'){b.click();return;}});
+            await page.waitForFunction(()=>{for(const b of document.querySelectorAll('button'))if(b.textContent.includes('Download'))return true;return false;},{timeout:300000});
+            await page.evaluate(()=>{for(const b of document.querySelectorAll('button'))if(b.textContent.includes('Download')){b.click();return;}});
+            await new Promise(r=>setTimeout(r,6000));
+            const lines=fs.readFileSync('/tmp/anchor_info.txt','utf8').split('\n');
+            const dst=`outdoor/${lines[0]}/${lines[1]}.mind`;
+            fs.copyFileSync('/tmp/out/targets.mind',dst);
+            console.log('Saved',dst,fs.statSync(dst).size,'bytes');
+            await browser.close();
+          })();
+          JSEOF
+
+      - name: Update config with anchorMind
+        run: |
+          python3 - << 'PYEOF'
+          import json
+          lines = open("/tmp/anchor_info.txt").read().split("\n")
+          ev, oid = lines[0], lines[1]
+          cfg_path = f"outdoor/{ev}/{oid}.json"
+          with open(cfg_path) as f: cfg = json.load(f)
+          cfg["anchorMind"] = f"{oid}.mind"
+          with open(cfg_path,"w") as f: json.dump(cfg, f, ensure_ascii=False, indent=2)
+          print("Updated", cfg_path)
+          PYEOF
+
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          mkdir -p /tmp/generated
+          for f in outdoor/*/*.mind outdoor/*/*.json; do
+            [ -f "$f" ] || continue
+            mkdir -p "/tmp/generated/$(dirname "$f")"; cp "$f" "/tmp/generated/$f"
+          done
+          for i in 1 2 3 4 5; do
+            git fetch origin main
+            git reset --hard origin/main
+            git clean -fd
+            CHANGED=0
+            LINES=$(cat /tmp/anchor_info.txt)
+            EV=$(echo "$LINES" | sed -n 1p); OID=$(echo "$LINES" | sed -n 2p)
+            for f in "outdoor/$EV/$OID.mind" "outdoor/$EV/$OID.json"; do
+              [ -f "/tmp/generated/$f" ] || continue
+              mkdir -p "$(dirname "$f")"; cp "/tmp/generated/$f" "$f"; git add "$f"; CHANGED=1
+            done
+            if [ "$CHANGED" = "0" ] || git diff --staged --quiet; then echo "Nothing"; exit 0; fi
+            git commit -m "Compile anchor [skip ci]"
+            if git push origin main; then echo "Pushed"; exit 0; fi
+            sleep $((i*5))
+          done
+          exit 1
