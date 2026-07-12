@@ -382,10 +382,10 @@ async function loadEvents(){
     if(!names.length){list.innerHTML='<div style="color:var(--muted);font-size:13px;">Нет событий</div>';}
     else{list.innerHTML=names.map(ev=>`<div class="card"><div class="card-header" onclick="openEvent('${ev}')"><div class="thumb-empty">📍</div><div class="card-meta"><div style="font-size:14px;font-weight:500;">${ev}</div><div class="sub">${events[ev].length} объектов</div></div></div></div>`).join('');}
   }catch(e){document.getElementById("od-list").innerHTML='<div style="color:#f87171;">Ошибка: '+e.message+'</div>';}
-  v.innerHTML+=`<div class="new-exhib"><div class="hint">Новое событие/место — адрес ar.vr-in.net/outdoor/название/</div><input id="od-new-event" placeholder="название события/места (латиницей)"><button class="btn btn-blue" onclick="createEvent()">＋ Создать</button></div>`;
+  v.innerHTML+=`<div class="new-exhib"><div class="hint">Новое событие/место — адрес ar.vr-in.net/outdoor/название/</div><input id="od-new-event" placeholder="название события/места (латиницей)"><button class="btn btn-blue" onclick="odCreateEvent()">＋ Создать</button></div>`;
 }
 
-async function createEvent(){
+async function odCreateEvent(){
   const ev=document.getElementById("od-new-event").value.trim().toLowerCase().replace(/[^a-z0-9-]/g,"");
   if(!ev){toast("Введите название","err");return;}
   // Новое событие ещё не существует в Git (нет объектов). Открываем пустой вид и сразу форму объекта.
