@@ -2,6 +2,13 @@
   "id": "obj1",
   "title": "Объект 1",
   "displayMode": "world",
-  "content": [],
+  "content": [
+    {
+      "type": "image",
+      "src": "assets/obj1-mrhwi9ms.png",
+      "mode": "plane",
+      "loop": true
+    }
+  ],
   "interactive": true
 }
