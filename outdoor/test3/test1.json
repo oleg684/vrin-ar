@@ -16,7 +16,8 @@
         "z": -0.53
       },
       "scale": 1.65,
-      "rotationY": -6
+      "rotationY": -6,
+      "sound": true
     }
   ],
   "interactive": false,
