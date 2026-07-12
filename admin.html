@@ -533,13 +533,14 @@ function renderContentList(ev,oid){
     else if(it.type==='video') thumb=`<video src="${base+it.src}#t=0.1" muted playsinline preload="metadata" style="width:48px;height:48px;object-fit:cover;border-radius:6px;background:#000;"></video>`;
     else thumb=`<div style="width:48px;height:48px;border-radius:6px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:22px;">🧊</div>`;
     const modeSel=it.type!=='model'?`<select onchange="updContentMode('${ev}','${oid}',${i},this.value)" style="font-size:11px;padding:0.2rem;"><option value="plane" ${it.mode==='plane'?'selected':''}>плоскость</option><option value="fullscreen" ${it.mode==='fullscreen'?'selected':''}>весь экран</option></select>`:'';
+    const soundChk=it.type==='video'?`<label style="font-size:10px;color:var(--muted);display:inline-flex;align-items:center;gap:0.2rem;cursor:pointer;"><input type="checkbox" ${it.sound?'checked':''} onchange="updContentSound('${ev}','${oid}',${i},this.checked)">🔊</label>`:'';
     const op=Math.round((it.opacity ?? 1)*100);
     return `<div class="content-item">
       <div style="display:flex;gap:0.6rem;align-items:center;">
         ${thumb}
         <div style="flex:1;min-width:0;"><div style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${name}</div>
         <div style="font-size:10px;color:var(--muted);">${it.type}</div></div>
-        <div style="display:flex;gap:0.4rem;align-items:center;">${modeSel}<button class="btn btn-red" style="font-size:11px;padding:0.2rem 0.5rem;" onclick="removeContent('${ev}','${oid}',${i})">✕</button></div>
+        <div style="display:flex;gap:0.4rem;align-items:center;">${soundChk}${modeSel}<button class="btn btn-red" style="font-size:11px;padding:0.2rem 0.5rem;" onclick="removeContent('${ev}','${oid}',${i})">✕</button></div>
       </div>
       <div style="display:flex;gap:0.6rem;align-items:center;margin-top:0.5rem;">
         <span style="font-size:11px;color:var(--muted);width:90px;">Прозрачность</span>
@@ -633,6 +634,12 @@ function removeContent(ev,oid,i){
   toast("Удалено (не забудьте «Сохранить сцену»)");
 }
 
+
+function updContentSound(ev,oid,i,val){
+  const st=window.__odCfg[oid];if(!st)return;
+  st.cfg.content[i].sound=val;st.dirty=true;
+  markDirtyBadge(oid);
+}
 function updContentMode(ev,oid,i,mode){
   const st=window.__odCfg[oid];if(!st)return;
   st.cfg.content[i].mode=mode;st.dirty=true;
