@@ -7,6 +7,37 @@ const setStatus = (t) => { const el=document.getElementById("status-bar"); if(el
 let CONFIG = null;
 const pendingVideos = []; // видео, которые надо запустить по касанию
 
+
+// ── Анимированный GIF как THREE-текстура (через canvas) ──
+const gifTextures = []; // {canvas, ctx, img, tex}
+function makeGifTexture(src, onAspect){
+  const img = document.createElement("img");
+  img.src = src;
+  img.crossOrigin = "anonymous";
+  // держим в DOM невидимым — браузер анимирует GIF только у подключённых элементов
+  img.style.cssText = "position:fixed;width:2px;height:2px;opacity:0.01;pointer-events:none;left:-10px;top:-10px;";
+  document.body.appendChild(img);
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  const tex = new THREE.CanvasTexture(canvas);
+  img.addEventListener("load", () => {
+    canvas.width = img.naturalWidth || 512;
+    canvas.height = img.naturalHeight || 512;
+    onAspect && onAspect(canvas.width / canvas.height);
+  });
+  gifTextures.push({ canvas, ctx, img, tex });
+  return tex;
+}
+function updateGifTextures(){
+  for (const g of gifTextures){
+    if (g.img.complete && g.canvas.width > 0){
+      g.ctx.drawImage(g.img, 0, 0, g.canvas.width, g.canvas.height);
+      g.tex.needsUpdate = true;
+    }
+  }
+}
+const isGif = (src) => /\.gif(\?|$)/i.test(src);
+
 // ── Аудиодорожка объекта + mute ──
 let objAudio = null;
 let isMuted = false;
@@ -155,7 +186,11 @@ async function initWorld(cfg) {
     } else {
       let tex, plane;
       if (item.type === "image") {
-        tex = new THREE.TextureLoader().load(item.src, t => { const a=t.image.width/t.image.height; plane.scale.set(a,1,1); });
+        if (isGif(item.src)) {
+          tex = makeGifTexture(item.src, a => plane.scale.set(a,1,1));
+        } else {
+          tex = new THREE.TextureLoader().load(item.src, t => { const a=t.image.width/t.image.height; plane.scale.set(a,1,1); });
+        }
       } else {
         const vv = makeVideo(item.src, item.loop, item.sound); tex = new THREE.VideoTexture(vv);
         vv.addEventListener("loadedmetadata", () => { const a=vv.videoWidth/vv.videoHeight; plane.scale.set(a,1,1); });
@@ -183,7 +218,7 @@ async function initWorld(cfg) {
   }
 
   addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
-  renderer.setAnimationLoop(()=>renderer.render(scene,camera));
+  renderer.setAnimationLoop(()=>{updateGifTextures();renderer.render(scene,camera);});
   setStatus("");
 }
 
@@ -227,7 +262,10 @@ async function initImage(cfg) {
       } catch(e){ console.log(e.message); }
     } else {
       let tex, plane;
-      if(item.type==="image") tex=new THREE.TextureLoader().load(item.src,t=>{const a=t.image.width/t.image.height;plane.scale.set(a,1,1);});
+      if(item.type==="image"){
+        if(isGif(item.src)) tex=makeGifTexture(item.src,a=>plane.scale.set(a,1,1));
+        else tex=new THREE.TextureLoader().load(item.src,t=>{const a=t.image.width/t.image.height;plane.scale.set(a,1,1);});
+      }
       else { const vv=makeVideo(item.src,item.loop,item.sound); tex=new THREE.VideoTexture(vv); vv.addEventListener("loadedmetadata",()=>{const a=vv.videoWidth/vv.videoHeight;plane.scale.set(a,1,1);}); }
       plane=new THREE.Mesh(new THREE.PlaneGeometry(1,1), new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide,transparent:true,opacity:item.opacity ?? 1}));
       const p=item.position||{x:0,y:0,z:0}; plane.position.set(p.x,p.y,p.z); plane.scale.setScalar(item.scale||1);
@@ -247,7 +285,7 @@ async function initImage(cfg) {
           c.style.position="fixed"; c.style.inset="0"; c.style.zIndex="5";
         });
       }, 300);
-  renderer.setAnimationLoop(()=>renderer.render(scene,camera));
+  renderer.setAnimationLoop(()=>{updateGifTextures();renderer.render(scene,camera);});
   setStatus("Наведите на картинку-якорь");
 }
 
