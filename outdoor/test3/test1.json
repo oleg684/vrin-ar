@@ -16,5 +16,6 @@
     "lat": 44.811439,
     "lng": 20.457868
   },
-  "useQrAsAnchor": true
+  "useQrAsAnchor": true,
+  "anchorMind": "test1.mind"
 }
