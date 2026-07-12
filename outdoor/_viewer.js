@@ -7,6 +7,43 @@ const setStatus = (t) => { const el=document.getElementById("status-bar"); if(el
 let CONFIG = null;
 const pendingVideos = []; // видео, которые надо запустить по касанию
 
+// ── Аудиодорожка объекта + mute ──
+let objAudio = null;
+let isMuted = false;
+function setupAudio(cfg){
+  if(!cfg.audio) return;
+  objAudio = new Audio(cfg.audio);
+  objAudio.loop = cfg.audioLoop !== false;
+  objAudio.volume = 0;
+  objAudio.preload = "auto";
+  objAudio._targetVol = cfg.audioVolume ?? 0.8;
+}
+function fadeAudio(a, target, ms, done){
+  if(!a) return;
+  if(a._fadeTimer) clearInterval(a._fadeTimer);
+  const start=a.volume, steps=20, dt=ms/steps; let n=0;
+  a._fadeTimer=setInterval(()=>{
+    n++; a.volume=Math.max(0,Math.min(1,start+(target-start)*(n/steps)));
+    if(n>=steps){clearInterval(a._fadeTimer);a._fadeTimer=null;done&&done();}
+  },dt);
+}
+function startObjAudio(){ if(!objAudio||isMuted)return; objAudio.play().then(()=>fadeAudio(objAudio,objAudio._targetVol,800)).catch(()=>{}); }
+function stopObjAudio(){ if(!objAudio)return; fadeAudio(objAudio,0,800,()=>{objAudio.pause();}); }
+function addMuteButton(){
+  if(!objAudio && !pendingVideos.some(v=>!v.muted)) return; // нет звука вообще
+  const btn=document.createElement("div");
+  btn.textContent="🔊";
+  btn.style.cssText="position:fixed;top:1rem;right:1rem;width:42px;height:42px;border-radius:50%;background:rgba(0,0,0,0.5);color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:150;user-select:none;";
+  btn.addEventListener("click",e=>{
+    e.stopPropagation();
+    isMuted=!isMuted;
+    btn.textContent=isMuted?"🔇":"🔊";
+    if(objAudio) objAudio.muted=isMuted;
+    pendingVideos.forEach(v=>{ if(v.dataset.hasSound) v.muted=isMuted; });
+  });
+  document.body.appendChild(btn);
+}
+
 function loadConfigUrl(){ return location.pathname.replace(/\.html$/, ".json").split("/").pop(); }
 async function loadConfig() {
   const r = await fetch(loadConfigUrl() + "?v=" + Date.now());
@@ -26,9 +63,9 @@ function tapGate() {
 }
 
 // Создаёт видео-элемент, готовый к воспроизведению на мобильных
-function makeVideo(src, loop){
+function makeVideo(src, loop, sound){
   const v=document.createElement("video");
-  v.src=src;v.loop=loop!==false;v.muted=true;v.playsInline=true;
+  v.src=src;v.loop=loop!==false;v.muted=!sound;if(sound)v.dataset.hasSound="1";v.playsInline=true;
   v.setAttribute("playsinline","");v.setAttribute("muted","");
   v.dataset.contentVideo="1";
   v.crossOrigin="anonymous";v.preload="auto";
@@ -62,7 +99,7 @@ async function initOverlay(cfg) {
       img.style.cssText = "max-width:92%;max-height:75%;object-fit:contain;border-radius:8px;opacity:"+(item.opacity ?? 1)+";";
       layer.appendChild(img);
     } else if (item.type === "video") {
-      const v = makeVideo(item.src, item.loop);
+      const v = makeVideo(item.src, item.loop, item.sound);
       v.style.cssText = "max-width:95%;max-height:80%;border-radius:8px;opacity:"+(item.opacity ?? 1)+";";
       v.controls = true;
       layer.appendChild(v);
@@ -85,7 +122,7 @@ async function initWorld(cfg) {
     document.body.appendChild(layer);
     for (const item of fullscreenItems) {
       if (item.type==="image"){ const img=document.createElement("img");img.src=item.src;img.style.cssText="max-width:92%;max-height:75%;object-fit:contain;pointer-events:auto;border-radius:8px;opacity:"+(item.opacity ?? 1)+";";layer.appendChild(img); }
-      else { const v=makeVideo(item.src,item.loop);v.style.cssText="max-width:95%;max-height:80%;pointer-events:auto;border-radius:8px;opacity:"+(item.opacity ?? 1)+";";v.controls=true;layer.appendChild(v); }
+      else { const v=makeVideo(item.src,item.loop,item.sound);v.style.cssText="max-width:95%;max-height:80%;pointer-events:auto;border-radius:8px;opacity:"+(item.opacity ?? 1)+";";v.controls=true;layer.appendChild(v); }
     }
   }
 
@@ -120,7 +157,7 @@ async function initWorld(cfg) {
       if (item.type === "image") {
         tex = new THREE.TextureLoader().load(item.src, t => { const a=t.image.width/t.image.height; plane.scale.set(a,1,1); });
       } else {
-        const vv = makeVideo(item.src, item.loop); tex = new THREE.VideoTexture(vv);
+        const vv = makeVideo(item.src, item.loop, item.sound); tex = new THREE.VideoTexture(vv);
         vv.addEventListener("loadedmetadata", () => { const a=vv.videoWidth/vv.videoHeight; plane.scale.set(a,1,1); });
       }
       const mat = new THREE.MeshBasicMaterial({ map:tex, side:THREE.DoubleSide, transparent:true, opacity: item.opacity ?? 1 });
@@ -191,15 +228,15 @@ async function initImage(cfg) {
     } else {
       let tex, plane;
       if(item.type==="image") tex=new THREE.TextureLoader().load(item.src,t=>{const a=t.image.width/t.image.height;plane.scale.set(a,1,1);});
-      else { const vv=makeVideo(item.src,item.loop); tex=new THREE.VideoTexture(vv); vv.addEventListener("loadedmetadata",()=>{const a=vv.videoWidth/vv.videoHeight;plane.scale.set(a,1,1);}); }
+      else { const vv=makeVideo(item.src,item.loop,item.sound); tex=new THREE.VideoTexture(vv); vv.addEventListener("loadedmetadata",()=>{const a=vv.videoWidth/vv.videoHeight;plane.scale.set(a,1,1);}); }
       plane=new THREE.Mesh(new THREE.PlaneGeometry(1,1), new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide,transparent:true,opacity:item.opacity ?? 1}));
       const p=item.position||{x:0,y:0,z:0}; plane.position.set(p.x,p.y,p.z); plane.scale.setScalar(item.scale||1);
       if(item.rotationY) plane.rotation.y = THREE.MathUtils.degToRad(item.rotationY);
       anchor.group.add(plane);
     }
   }
-  anchor.onTargetFound=()=>setStatus("");
-  anchor.onTargetLost=()=>setStatus("Наведите на картинку-якорь");
+  anchor.onTargetFound=()=>{setStatus("");startObjAudio();};
+  anchor.onTargetLost=()=>{setStatus("Наведите на картинку-якорь");stopObjAudio();};
   await mindar.start();
       // MindAR вставляет камеру-видео без стилей — растягиваем на весь экран под канвас
       setTimeout(()=>{
@@ -219,14 +256,18 @@ async function initImage(cfg) {
   try {
     CONFIG = await loadConfig();
     const mode = CONFIG.displayMode || "world";
-    // Ждём касание — камера и видео требуют жеста пользователя
+    setupAudio(CONFIG);
+    // Ждём касание — камера, видео и звук требуют жеста пользователя
     await tapGate();
     setStatus("Запуск...");
     if (mode === "overlay") await initOverlay(CONFIG);
     else if (mode === "image") await initImage(CONFIG);
     else await initWorld(CONFIG);
+    addMuteButton();
     // Запускаем все видео (жест уже был на tapGate)
     for (const v of pendingVideos) { v.play().catch(()=>{}); }
+    // Аудиодорожка: в world/overlay — сразу; в image — по обнаружению якоря
+    if (mode !== "image") startObjAudio();
   } catch(err) {
     setStatus("Ошибка: " + (err.message||err));
   }
