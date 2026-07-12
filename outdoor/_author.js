@@ -196,6 +196,15 @@ async function buildContent(parent, loader){
       anchor.onTargetLost=()=>setStatus("Наведите на якорь");
       updateUI();
       await mindar.start();
+      // MindAR вставляет камеру-видео без стилей — растягиваем на весь экран под канвас
+      setTimeout(()=>{
+        document.querySelectorAll("video").forEach(v=>{
+          if(v.srcObject){ v.style.cssText="position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;"; }
+        });
+        document.querySelectorAll("canvas").forEach(c=>{
+          c.style.position="fixed"; c.style.inset="0"; c.style.zIndex="5";
+        });
+      }, 300);
       setStatus("Наведите на якорь");
       renderer.setAnimationLoop(()=>renderer.render(scene,camera));
     } else {
