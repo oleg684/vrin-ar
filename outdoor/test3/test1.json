@@ -7,7 +7,7 @@
       "type": "video",
       "src": "assets/test1__VRplanair.mp4",
       "name": "VRplanair.mp4",
-      "mode": "plane",
+      "mode": "fullscreen",
       "loop": true
     }
   ],
