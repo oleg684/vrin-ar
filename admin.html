@@ -438,7 +438,7 @@ function renderCardInner(ev,oid,cfg){
     <div class="thumb-empty">${isImage?'🖼':cfg.displayMode==='overlay'?'📺':'🌐'}</div>
     <div class="card-meta"><div style="font-size:14px;font-weight:500;">${cfg.title||oid} <span id="statusbadge-${oid}" style="font-size:12px;color:${dirty?'#f87171':'#4ade80'};" title="${dirty?'Не сохранено':'Готово'}">●</span></div>
     <div class="sub">${modeLabels[cfg.displayMode]||'—'} · ${nContent} элем.${cfg.gps?' · 📍 GPS':''}${cfg.interactive?' · ✋':''}</div></div>
-    <div onclick="event.stopPropagation()"><a class="btn btn-outline" href="${url}" target="_blank">👁</a> <button class="btn btn-red" onclick="deleteObject('${ev}','${oid}')">✕</button></div></div>
+    <div onclick="event.stopPropagation()"><a class="btn btn-outline" href="${url}" target="_blank">👁</a> <a class="btn btn-outline" href="https://ar.vr-in.net/outdoor/${ev}/${oid}-author.html" target="_blank">✏️</a> <button class="btn btn-red" onclick="deleteObject('${ev}','${oid}')">✕</button></div></div>
     <div class="card-body" id="odbody-${oid}">
       <div class="field-row"><label>Название</label><input id="odtitle-${oid}" value="${(cfg.title||oid).replace(/"/g,'&quot;')}" oninput="updObjField('${ev}','${oid}','title',this.value)"></div>
       <div class="field-row"><label>Режим показа</label><select onchange="updObjField('${ev}','${oid}','displayMode',this.value)">
@@ -575,6 +575,9 @@ async function createObject(){
     const tpl=await(await fetch(RAW+"outdoor/_template.html")).text();
     const htmlObj=tpl.replace(/<title>.*<\/title>/,`<title>${title} — VR IN AR</title>`);
     await odApi(`outdoor/${ev}/${oid}.html`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"html "+oid,content:b64enc(htmlObj)})});
+    const authorTpl=await(await fetch(RAW+"outdoor/_author.html")).text();
+    const authorObj=authorTpl.replace(/<title>.*<\/title>/,`<title>${title} — Автор</title>`);
+    await odApi(`outdoor/${ev}/${oid}-author.html`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"author html "+oid,content:b64enc(authorObj)})});
     toast("Объект создан");openEvent(ev);
   }catch(e){toast("Ошибка: "+e.message,"err");}
   hideOv();
@@ -798,7 +801,7 @@ async function deleteObject(ev,oid){
   if(!confirm("Удалить объект "+oid+"?"))return;
   showOv("Удаление...");
   async function del(p){const r=await odApi(p);if(!r.ok)return;const d=await r.json();await odApi(p,{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"del",sha:d.sha})});}
-  try{await del(`outdoor/${ev}/${oid}.json`);await del(`outdoor/${ev}/${oid}.html`);await del(`outdoor/${ev}/${oid}.qr.png`);toast("Объект удалён");openEvent(ev);}catch(e){toast(e.message,"err");}
+  try{await del(`outdoor/${ev}/${oid}.json`);await del(`outdoor/${ev}/${oid}.html`);await del(`outdoor/${ev}/${oid}.qr.png`);await del(`outdoor/${ev}/${oid}-author.html`);await del(`outdoor/${ev}/${oid}.mind`);toast("Объект удалён");openEvent(ev);}catch(e){toast(e.message,"err");}
   hideOv();
 }
 
