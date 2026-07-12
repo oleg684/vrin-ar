@@ -10,5 +10,6 @@
       "loop": true
     }
   ],
-  "interactive": true
+  "interactive": true,
+  "useQrAsAnchor": true
 }
