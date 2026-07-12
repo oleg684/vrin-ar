@@ -457,6 +457,18 @@ function renderCardInner(ev,oid,cfg){
       </div>
       <div style="font-size:11px;color:var(--muted);margin-top:0.4rem;">Файл загружается сразу. Остальные настройки — по кнопке «Сохранить сцену». Макс. ~25 МБ.</div>
 
+      <div style="margin:0.75rem 0 0.5rem;font-size:12px;color:var(--muted);text-transform:uppercase;">Аудиодорожка</div>
+      ${cfg.audio?`<div class="content-item"><div style="display:flex;gap:0.6rem;align-items:center;">
+        <div style="width:48px;height:48px;border-radius:6px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:22px;">🎵</div>
+        <div style="flex:1;min-width:0;"><div style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${cfg.audioName||cfg.audio.split('/').pop()}</div></div>
+        <label style="font-size:10px;color:var(--muted);display:inline-flex;align-items:center;gap:0.2rem;"><input type="checkbox" ${cfg.audioLoop!==false?'checked':''} onchange="updObjField('${ev}','${oid}','audioLoop',this.checked)">повтор</label>
+        <button class="btn btn-red" style="font-size:11px;padding:0.2rem 0.5rem;" onclick="removeObjAudio('${ev}','${oid}')">✕</button></div>
+        <div style="display:flex;gap:0.6rem;align-items:center;margin-top:0.5rem;">
+        <span style="font-size:11px;color:var(--muted);width:90px;">Громкость</span>
+        <input type="range" min="10" max="100" step="5" value="${Math.round((cfg.audioVolume??0.8)*100)}" style="flex:1;" oninput="updObjAudioVolume('${ev}','${oid}',this.value);this.nextElementSibling.textContent=this.value+'%'">
+        <span style="font-size:11px;color:var(--muted);width:38px;text-align:right;">${Math.round((cfg.audioVolume??0.8)*100)}%</span></div></div>`
+      :`<div class="file-input-wrap"><button class="btn btn-outline">＋ Аудио (MP3)</button><input type="file" accept=".mp3,.wav,.ogg,.m4a" onchange="uploadObjAudio('${ev}','${oid}',this)"></div>`}
+
       ${isImage?`<div style="margin:0.75rem 0 0.5rem;font-size:12px;color:var(--muted);text-transform:uppercase;">Картинка-якорь</div>
       <div class="field-row"><label>Использовать QR</label><label class="toggle"><input type="checkbox" ${cfg.useQrAsAnchor?'checked':''} onchange="toggleQrAnchor('${ev}','${oid}',this.checked)"> QR-код как якорь</label></div>
       ${cfg.useQrAsAnchor?`<div style="font-size:11px;color:var(--muted);margin-bottom:0.5rem;">Якорь = QR этого объекта. Сгенерируйте QR ниже, затем «Скомпилировать якорь».</div>`:`<div class="field-row"><label>${cfg.anchorImage?'✓ загружен':'не загружен'}</label><div class="file-input-wrap"><button class="btn btn-outline">⬆ Загрузить якорь</button><input type="file" accept=".jpg,.jpeg,.png" onchange="uploadAnchor('${ev}','${oid}',this)"></div></div>`}
@@ -635,6 +647,44 @@ function removeContent(ev,oid,i){
 }
 
 
+
+async function uploadObjAudio(ev,oid,input){
+  const file=input.files[0];if(!file)return;
+  const MAX=25*1024*1024;
+  if(file.size>MAX){toast("Файл слишком большой","err");input.value="";return;}
+  const clean=file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+  const fname=`${oid}__audio__${clean}`;
+  const path=`outdoor/${ev}/assets/${fname}`;
+  showOv("Загрузка аудио...",(file.size/1024/1024).toFixed(1)+" MB");
+  try{
+    const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=rej;r.readAsDataURL(file);});
+    const check=await odApi(path);const sha0=check.ok?(await check.json()).sha:null;
+    const body={message:"audio "+fname,content:b64};if(sha0)body.sha=sha0;
+    const up=await odApi(path,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    if(!up.ok)throw new Error("Загрузка не удалась: "+up.status);
+    const st=window.__odCfg[oid];
+    st.cfg.audio=`assets/${fname}`;st.cfg.audioName=file.name;
+    st.cfg.audioLoop=true;st.cfg.audioVolume=0.8;st.dirty=true;
+    rerenderCard(ev,oid);
+    setSceneStatus(oid,"red");
+    toast("Аудио загружено (не забудьте «Сохранить сцену»)");
+  }catch(e){toast(e.message,"err");}
+  input.value="";
+  hideOv();
+}
+function removeObjAudio(ev,oid){
+  const st=window.__odCfg[oid];if(!st)return;
+  delete st.cfg.audio;delete st.cfg.audioName;delete st.cfg.audioLoop;delete st.cfg.audioVolume;
+  st.dirty=true;
+  rerenderCard(ev,oid);
+  setSceneStatus(oid,"red");
+  toast("Аудио убрано (не забудьте «Сохранить сцену»)");
+}
+function updObjAudioVolume(ev,oid,val){
+  const st=window.__odCfg[oid];if(!st)return;
+  st.cfg.audioVolume=parseInt(val)/100;st.dirty=true;
+  setSceneStatus(oid,"red");
+}
 function updContentSound(ev,oid,i,val){
   const st=window.__odCfg[oid];if(!st)return;
   st.cfg.content[i].sound=val;st.dirty=true;
