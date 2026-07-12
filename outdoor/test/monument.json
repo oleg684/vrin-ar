@@ -8,6 +8,12 @@
       "src": "assets/monument-mrhvw35j.mp4",
       "mode": "plane",
       "loop": true
+    },
+    {
+      "type": "video",
+      "src": "assets/monument-mrhyge8h.mp4",
+      "mode": "plane",
+      "loop": true
     }
   ],
   "interactive": true
