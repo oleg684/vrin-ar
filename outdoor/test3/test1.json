@@ -8,7 +8,8 @@
       "src": "assets/test1__VRplanair.mp4",
       "name": "VRplanair.mp4",
       "mode": "plane",
-      "loop": true
+      "loop": true,
+      "opacity": 0.55
     }
   ],
   "interactive": false,
