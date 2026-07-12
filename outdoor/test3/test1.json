@@ -9,7 +9,14 @@
       "name": "VRplanair.mp4",
       "mode": "plane",
       "loop": true,
-      "opacity": 0.55
+      "opacity": 0.7,
+      "position": {
+        "x": 0.08,
+        "y": 1.06,
+        "z": -0.53
+      },
+      "scale": 1.65,
+      "rotationY": -6
     }
   ],
   "interactive": false,
