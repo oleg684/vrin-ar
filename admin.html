@@ -453,7 +453,7 @@ function renderCardInner(ev,oid,cfg){
       <div style="display:flex;gap:0.4rem;margin-top:0.5rem;flex-wrap:wrap;">
         <div class="file-input-wrap"><button class="btn btn-outline">＋ 3D (GLB)</button><input type="file" accept=".glb" onchange="addContent('${ev}','${oid}','model',this)"></div>
         <div class="file-input-wrap"><button class="btn btn-outline">＋ Видео</button><input type="file" accept=".mp4,.webm,.mov" onchange="addContent('${ev}','${oid}','video',this)"></div>
-        <div class="file-input-wrap"><button class="btn btn-outline">＋ Картинка</button><input type="file" accept=".jpg,.jpeg,.png" onchange="addContent('${ev}','${oid}','image',this)"></div>
+        <div class="file-input-wrap"><button class="btn btn-outline">＋ Картинка</button><input type="file" accept=".jpg,.jpeg,.png,.gif,.webp" onchange="addContent('${ev}','${oid}','image',this)"></div>
       </div>
       <div style="font-size:11px;color:var(--muted);margin-top:0.4rem;">Файл загружается сразу. Остальные настройки — по кнопке «Сохранить сцену». Макс. ~25 МБ.</div>
 
