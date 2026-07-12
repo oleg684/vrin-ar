@@ -1,7 +1,7 @@
 {
   "id": "obj1",
   "title": "Объект 1",
-  "displayMode": "world",
+  "displayMode": "image",
   "content": [
     {
       "type": "image",
