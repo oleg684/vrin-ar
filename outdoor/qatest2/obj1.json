@@ -1,7 +1,15 @@
 {
   "id": "obj1",
-  "title": "Тест",
+  "title": "Новое имя",
   "displayMode": "world",
-  "content": [],
-  "interactive": true
+  "content": [
+    {
+      "type": "video",
+      "src": "assets/obj1____________2024.mp4",
+      "name": "Мой Ролик 2024.mp4",
+      "mode": "plane",
+      "loop": true
+    }
+  ],
+  "interactive": false
 }
