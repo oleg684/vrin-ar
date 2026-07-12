@@ -1,7 +1,7 @@
 {
   "id": "test1",
   "title": "Тестовый памятник",
-  "displayMode": "world",
+  "displayMode": "image",
   "content": [
     {
       "type": "video",
@@ -11,9 +11,10 @@
       "loop": true
     }
   ],
-  "interactive": true,
+  "interactive": false,
   "gps": {
     "lat": 44.811439,
     "lng": 20.457868
-  }
+  },
+  "useQrAsAnchor": true
 }
