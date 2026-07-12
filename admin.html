@@ -365,11 +365,18 @@ async function loadEvents(){
   const v=document.getElementById("od-view");
   v.innerHTML='<div class="section-header"><h2>События / места</h2></div><div id="od-list">Загрузка...</div>';
   try{
-    const ref=await(await fetch(API+"/git/refs/heads/main",{headers:{Authorization:"token "+tok()}})).json();
-    const tree=await(await fetch(API+"/git/trees/"+ref.object.sha+"?recursive=1",{headers:{Authorization:"token "+tok()}})).json();
-    // события = папки outdoor/{event}/ содержащие хотя бы один .json
+    // Contents API свежее git tree (tree кэшируется на стороне GitHub)
+    const rootR=await odApi("outdoor?ref=main&t="+Date.now());
+    const root=rootR.ok?await rootR.json():[];
+    const dirs=root.filter(x=>x.type==="dir");
     const events={};
-    tree.tree.forEach(t=>{const m=t.path.match(/^outdoor\/([^/]+)\/([^/]+)\.json$/);if(m){events[m[1]]=events[m[1]]||[];events[m[1]].push(m[2]);}});
+    for(const d of dirs){
+      const evR=await odApi("outdoor/"+d.name+"?ref=main&t="+Date.now());
+      if(!evR.ok)continue;
+      const items=await evR.json();
+      const objs=items.filter(x=>x.name.endsWith(".json")).map(x=>x.name.replace(".json",""));
+      if(objs.length)events[d.name]=objs;
+    }
     const list=document.getElementById("od-list");
     const names=Object.keys(events);
     if(!names.length){list.innerHTML='<div style="color:var(--muted);font-size:13px;">Нет событий</div>';}
@@ -400,9 +407,9 @@ async function openEvent(ev){
   document.getElementById("od-breadcrumb").innerHTML=`<a onclick="loadEvents()">Outdoor</a><span class="sep">/</span><span>${ev}</span>`;
   const v=document.getElementById("od-view");v.innerHTML='Загрузка...';
   try{
-    const ref=await(await fetch(API+"/git/refs/heads/main",{headers:{Authorization:"token "+tok()}})).json();
-    const tree=await(await fetch(API+"/git/trees/"+ref.object.sha+"?recursive=1",{headers:{Authorization:"token "+tok()}})).json();
-    const objs=tree.tree.filter(t=>t.path.match(new RegExp(`^outdoor/${ev}/[^/]+\\.json$`))).map(t=>t.path.split("/").pop().replace(".json",""));
+    const evR=await odApi("outdoor/"+ev+"?ref=main&t="+Date.now());
+    const items=evR.ok?await evR.json():[];
+    const objs=items.filter(x=>x.name&&x.name.endsWith(".json")).map(x=>x.name.replace(".json",""));
     v.innerHTML=`<div class="section-header"><h2>Объекты — ${ev}</h2><span class="count">${objs.length}</span></div><div id="od-objs"></div><div class="add-card" onclick="showNewObject()"><div class="icon">＋</div>Добавить объект</div><div id="od-newobj"></div>`;
     const list=document.getElementById("od-objs");
     for(const oid of objs){
