@@ -413,7 +413,7 @@ async function openEvent(ev){
     v.innerHTML=`<div class="section-header"><h2>Объекты — ${ev}</h2><span class="count">${objs.length}</span></div><div id="od-objs"></div><div class="add-card" onclick="showNewObject()"><div class="icon">＋</div>Добавить объект</div><div id="od-newobj"></div>`;
     const list=document.getElementById("od-objs");
     for(const oid of objs){
-      let cfg={};try{cfg=await(await fetch(RAW+`outdoor/${ev}/${oid}.json?v=`+Date.now())).json();}catch(e){}
+      let cfg={};try{const cr=await odApi(`outdoor/${ev}/${oid}.json?ref=main&t=`+Date.now());if(cr.ok){const cd=await cr.json();cfg=JSON.parse(b64dec(cd.content));}}catch(e){}
       list.appendChild(buildObjectCard(ev,oid,cfg));
     }
   }catch(e){v.innerHTML='<div style="color:#f87171;">Ошибка: '+e.message+'</div>';}
