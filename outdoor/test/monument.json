@@ -3,5 +3,5 @@
   "title": "Тестовый памятник",
   "displayMode": "world",
   "content": [],
-  "interactive": true
+  "interactive": false
 }
