@@ -492,7 +492,7 @@ function rerenderCard(ev,oid){
   renderContentList(ev,oid);
 }
 
-function toggleOdCard(id){const b=document.getElementById("odbody-"+id),c=document.getElementById("odc-"+id),o=b.classList.contains("open");document.querySelectorAll("#od-objs .card-body").forEach(x=>x.classList.remove("open"));document.querySelectorAll("#od-objs .card").forEach(x=>x.classList.remove("selected"));if(!o){b.classList.add("open");c.classList.add("selected");}}
+function toggleOdCard(id){const b=document.getElementById("odbody-"+id),c=document.getElementById("odc-"+id);if(!b||!c)return;const o=b.classList.contains("open");document.querySelectorAll("#od-objs .card-body").forEach(x=>x.classList.remove("open"));document.querySelectorAll("#od-objs .card").forEach(x=>x.classList.remove("selected"));if(!o){b.classList.add("open");c.classList.add("selected");}}
 
 function renderContentList(ev,oid){
   const el=document.getElementById("odcontent-"+oid);if(!el)return;
