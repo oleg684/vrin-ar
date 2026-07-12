@@ -152,10 +152,19 @@ async function initWorld(cfg) {
 
 // ─────────────────────────────────── IMAGE (MindAR) ───────────────────────────────────
 async function initImage(cfg) {
+  // Проверяем, что якорь скомпилирован — иначе MindAR виснет
+  const mindFile = cfg.anchorMind || "anchor.mind";
+  try {
+    const chk = await fetch(mindFile + "?t=" + Date.now(), { method: "HEAD" });
+    if (!chk.ok) throw new Error();
+  } catch(e) {
+    setStatus("Якорь не скомпилирован. В админке нажмите «Скомпилировать якорь» или выберите режим «На весь экран».");
+    return;
+  }
   const { MindARThree } = await import("mindar-image-three");
   const mindar = new MindARThree({
     container: document.body,
-    imageTargetSrc: cfg.anchorMind || "anchor.mind",
+    imageTargetSrc: mindFile,
     maxTrack: 1, uiLoading:"no", uiScanning:"no", uiError:"no",
     filterMinCF: 0.001, filterBeta: 0.001
   });
