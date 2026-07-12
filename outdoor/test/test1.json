@@ -3,5 +3,5 @@
   "title": "test2",
   "displayMode": "world",
   "content": [],
-  "interactive": true
+  "interactive": false
 }
