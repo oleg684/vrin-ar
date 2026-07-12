@@ -381,8 +381,17 @@ async function loadEvents(){
 async function createEvent(){
   const ev=document.getElementById("od-new-event").value.trim().toLowerCase().replace(/[^a-z0-9-]/g,"");
   if(!ev){toast("Введите название","err");return;}
-  // Событие создаётся автоматически при добавлении первого объекта — сразу открываем
-  odState.event=ev;openEvent(ev);
+  // Новое событие ещё не существует в Git (нет объектов). Открываем пустой вид и сразу форму объекта.
+  odState.view="objects";odState.event=ev;
+  document.getElementById("od-breadcrumb").innerHTML=`<a onclick="loadEvents()">Outdoor</a><span class="sep">/</span><span>${ev}</span>`;
+  const v=document.getElementById("od-view");
+  v.innerHTML=`<div class="section-header"><h2>Объекты — ${ev}</h2><span class="count">0</span></div>
+    <div style="color:var(--muted);font-size:12px;margin-bottom:0.75rem;">Событие появится в списке после создания первого объекта.</div>
+    <div id="od-objs"></div>
+    <div class="add-card" onclick="showNewObject()"><div class="icon">＋</div>Добавить объект</div>
+    <div id="od-newobj"></div>`;
+  showNewObject();
+  toast("Заполните первый объект");
 }
 
 // ── Объекты события ──
