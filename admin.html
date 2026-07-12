@@ -609,16 +609,19 @@ async function uploadAnchor(ev,oid,input){
     const body={message:"anchor",content:b64};if(sha0)body.sha=sha0;
     const up=await odApi(path,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
     if(!up.ok)throw new Error("Загрузка не удалась: "+up.status);
-    const{cfg,sha}=await loadObjCfg(ev,oid);cfg.anchorImage=`${oid}-anchor.jpg`;cfg.useQrAsAnchor=false;await saveObjCfg(ev,oid,cfg,sha,"Set anchor");
-    toast("Якорь загружен. Нажмите «Скомпилировать якорь».");openEvent(ev);
+    const st=window.__odCfg[oid];st.cfg.anchorImage=`${oid}-anchor.jpg`;st.cfg.useQrAsAnchor=false;st.dirty=true;
+    rerenderCard(ev,oid);
+    toast("Якорь загружен. «Сохранить сцену», затем «Скомпилировать якорь».");
   }catch(e){toast(e.message,"err");}
   hideOv();
 }
 
-async function toggleQrAnchor(ev,oid,val){
-  showOv("Сохранение...");
-  try{const{cfg,sha}=await loadObjCfg(ev,oid);cfg.useQrAsAnchor=val;await saveObjCfg(ev,oid,cfg,sha,"QR as anchor");openEvent(ev);}catch(e){toast(e.message,"err");}
-  hideOv();
+function toggleQrAnchor(ev,oid,val){
+  const st=window.__odCfg[oid];if(!st)return;
+  st.cfg.useQrAsAnchor=val;
+  if(val)st.cfg.anchorImage=undefined;
+  st.dirty=true;
+  rerenderCard(ev,oid);
 }
 
 async function compileAnchor(ev,oid){
@@ -633,17 +636,24 @@ async function compileAnchor(ev,oid){
 }
 
 async function saveScene(ev,oid){
+  const st=window.__odCfg[oid];if(!st){toast("Нет данных","err");return;}
   showOv("Сохранение сцены...");
   try{
-    const{cfg,sha}=await loadObjCfg(ev,oid);
-    // Собираем актуальные значения из полей
-    const t=document.getElementById("odtitle-"+oid);if(t)cfg.title=t.value;
+    // Актуальные значения из полей
+    const t=document.getElementById("odtitle-"+oid);if(t)st.cfg.title=t.value;
     const lat=parseFloat((document.getElementById("lat-"+oid)||{}).value);
     const lng=parseFloat((document.getElementById("lng-"+oid)||{}).value);
-    if(!isNaN(lat)&&!isNaN(lng))cfg.gps={lat,lng};
-    await saveObjCfg(ev,oid,cfg,sha,"Save scene "+oid);
+    if(!isNaN(lat)&&!isNaN(lng))st.cfg.gps={lat,lng};
+    // Берём свежий sha чтобы не словить конфликт
+    const cur=await odApi(`outdoor/${ev}/${oid}.json?ref=main&t=`+Date.now());
+    let sha=st.sha;
+    if(cur.ok){sha=(await cur.json()).sha;}
+    const r=await odApi(`outdoor/${ev}/${oid}.json`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"Save scene "+oid,content:b64enc(JSON.stringify(st.cfg,null,2)),sha})});
+    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.message||r.status);}
+    st.sha=(await r.json()).content.sha;st.dirty=false;
+    rerenderCard(ev,oid);
     toast("✅ Сцена сохранена");
-  }catch(e){toast(e.message,"err");}
+  }catch(e){toast("Ошибка: "+e.message,"err");}
   hideOv();
 }
 
@@ -654,17 +664,11 @@ function takeGps(oid){
   navigator.geolocation.getCurrentPosition(p=>{
     document.getElementById("lat-"+oid).value=p.coords.latitude.toFixed(6);
     document.getElementById("lng-"+oid).value=p.coords.longitude.toFixed(6);
-    toast("Координаты получены");
+    markDirty(oid);markDirtyBadge(oid);
+    toast("Координаты получены (не забудьте «Сохранить сцену»)");
   },e=>toast("Ошибка GPS: "+e.message,"err"),{enableHighAccuracy:true});
 }
-async function saveGps(ev,oid){
-  const lat=parseFloat(document.getElementById("lat-"+oid).value);
-  const lng=parseFloat(document.getElementById("lng-"+oid).value);
-  if(isNaN(lat)||isNaN(lng)){toast("Введите координаты","err");return;}
-  showOv("Сохранение GPS...");
-  try{const{cfg,sha}=await loadObjCfg(ev,oid);cfg.gps={lat,lng};await saveObjCfg(ev,oid,cfg,sha,"Set GPS");toast("GPS сохранён");}catch(e){toast(e.message,"err");}
-  hideOv();
-}
+function saveGps(ev,oid){ saveScene(ev,oid); }
 
 // ── QR ──
 function genQr(ev,oid){
