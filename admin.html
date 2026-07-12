@@ -494,14 +494,24 @@ function rerenderCard(ev,oid){
 
 function toggleOdCard(id){const b=document.getElementById("odbody-"+id),c=document.getElementById("odc-"+id),o=b.classList.contains("open");document.querySelectorAll("#od-objs .card-body").forEach(x=>x.classList.remove("open"));document.querySelectorAll("#od-objs .card").forEach(x=>x.classList.remove("selected"));if(!o){b.classList.add("open");c.classList.add("selected");}}
 
-function renderContentList(ev,oid,cfg){
+function renderContentList(ev,oid){
   const el=document.getElementById("odcontent-"+oid);if(!el)return;
+  const cfg=(window.__odCfg[oid]||{}).cfg||{};
   const items=cfg.content||[];
   if(!items.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;">Пусто</div>';return;}
+  const base=RAW+"outdoor/"+ev+"/";
   el.innerHTML=items.map((it,i)=>{
-    const icon=it.type==='model'?'🧊':it.type==='video'?'🎬':'🖼';
+    const name=it.name||it.src.split('/').pop();
+    let thumb;
+    if(it.type==='image') thumb=`<img src="${base+it.src}?t=${Date.now()}" style="width:48px;height:48px;object-fit:cover;border-radius:6px;background:#000;">`;
+    else if(it.type==='video') thumb=`<video src="${base+it.src}#t=0.1" muted playsinline preload="metadata" style="width:48px;height:48px;object-fit:cover;border-radius:6px;background:#000;"></video>`;
+    else thumb=`<div style="width:48px;height:48px;border-radius:6px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:22px;">🧊</div>`;
     const modeSel=it.type!=='model'?`<select onchange="updContentMode('${ev}','${oid}',${i},this.value)" style="font-size:11px;padding:0.2rem;"><option value="plane" ${it.mode==='plane'?'selected':''}>плоскость</option><option value="fullscreen" ${it.mode==='fullscreen'?'selected':''}>весь экран</option></select>`:'';
-    return `<div class="content-item"><div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:12px;">${icon} ${it.src.split('/').pop()}</span><div style="display:flex;gap:0.4rem;align-items:center;">${modeSel}<button class="btn btn-red" style="font-size:11px;padding:0.2rem 0.5rem;" onclick="removeContent('${ev}','${oid}',${i})">✕</button></div></div></div>`;
+    return `<div class="content-item"><div style="display:flex;gap:0.6rem;align-items:center;">
+      ${thumb}
+      <div style="flex:1;min-width:0;"><div style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${name}</div>
+      <div style="font-size:10px;color:var(--muted);">${it.type}</div></div>
+      <div style="display:flex;gap:0.4rem;align-items:center;">${modeSel}<button class="btn btn-red" style="font-size:11px;padding:0.2rem 0.5rem;" onclick="removeContent('${ev}','${oid}',${i})">✕</button></div></div></div>`;
   }).join('');
 }
 
@@ -533,48 +543,61 @@ async function createObject(){
 async function loadObjCfg(ev,oid){const r=await odApi(`outdoor/${ev}/${oid}.json`);const d=await r.json();return{cfg:JSON.parse(b64dec(d.content)),sha:d.sha};}
 async function saveObjCfg(ev,oid,cfg,sha,msg){const r=await odApi(`outdoor/${ev}/${oid}.json`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:msg,content:b64enc(JSON.stringify(cfg,null,2)),sha})});if(!r.ok)throw new Error("Save "+r.status);return(await r.json()).content.sha;}
 
-async function updObjField(ev,oid,field,val){
-  showOv("Сохранение...");
-  try{const{cfg,sha}=await loadObjCfg(ev,oid);cfg[field]=val;await saveObjCfg(ev,oid,cfg,sha,"Update "+field);if(field==='displayMode')openEvent(ev);toast("Сохранено");}catch(e){toast(e.message,"err");}
-  hideOv();
+function updObjField(ev,oid,field,val){
+  const st=window.__odCfg[oid];if(!st)return;
+  st.cfg[field]=val;st.dirty=true;
+  // Смена режима меняет набор полей — перерисуем карточку на месте
+  if(field==='displayMode'){ rerenderCard(ev,oid); }
+  else { markDirtyBadge(oid); }
+}
+function markDirtyBadge(oid){
+  const st=window.__odCfg[oid];if(!st)return;
+  const meta=document.querySelector("#odc-"+oid+" .card-meta > div");
+  if(meta && !meta.querySelector('span')){ meta.innerHTML+=' <span style="color:#fbbf24;font-size:11px;">● не сохранено</span>'; }
 }
 
 async function addContent(ev,oid,type,input){
   const file=input.files[0];if(!file)return;
   const MAX=25*1024*1024;
   if(file.size>MAX){toast("Файл слишком большой ("+(file.size/1024/1024).toFixed(1)+" МБ). Максимум 25 МБ.","err");input.value="";return;}
-  const ext=file.name.split('.').pop().toLowerCase();
-  const fname=`${oid}-${Date.now().toString(36)}.${ext}`;
+  // Оригинальное имя (санитизация), с префиксом oid чтобы не было коллизий между объектами
+  const clean=file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+  const fname=`${oid}__${clean}`;
   const path=`outdoor/${ev}/assets/${fname}`;
   showOv("Загрузка "+file.name,(file.size/1024/1024).toFixed(1)+" MB");
   try{
     const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=()=>rej(new Error("Чтение файла не удалось"));r.readAsDataURL(file);});
-    const up=await odApi(path,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"upload "+fname,content:b64})});
+    const check=await odApi(path);const sha0=check.ok?(await check.json()).sha:null;
+    const body={message:"upload "+fname,content:b64};if(sha0)body.sha=sha0;
+    const up=await odApi(path,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
     if(!up.ok){const e=await up.json().catch(()=>({}));throw new Error("Загрузка не удалась: "+(e.message||up.status));}
-    const{cfg,sha}=await loadObjCfg(ev,oid);
-    cfg.content=cfg.content||[];
-    const item={type,src:`assets/${fname}`};
-    if(type==='model'){item.position={x:0,y:0,z:cfg.displayMode==='world'?-3:0};item.scale=cfg.displayMode==='image'?0.5:1;}
+    // Добавляем в локальное состояние
+    const st=window.__odCfg[oid];st.cfg.content=st.cfg.content||[];
+    const item={type,src:`assets/${fname}`,name:file.name};
+    if(type==='model'){item.position={x:0,y:0,z:st.cfg.displayMode==='world'?-3:0};item.scale=st.cfg.displayMode==='image'?0.5:1;}
     else{item.mode='plane';item.loop=true;}
-    cfg.content.push(item);
-    await saveObjCfg(ev,oid,cfg,sha,"Add content "+type);
-    toast("Добавлено: "+file.name);
-    openEvent(ev);
+    st.cfg.content.push(item);st.dirty=true;
+    renderContentList(ev,oid);
+    markDirtyBadge(oid);
+    toast("Добавлено: "+file.name+" (не забудьте «Сохранить сцену»)");
   }catch(e){toast(e.message,"err");}
   input.value="";
   hideOv();
 }
 
-async function removeContent(ev,oid,i){
-  showOv("Удаление...");
-  try{const{cfg,sha}=await loadObjCfg(ev,oid);const it=cfg.content[i];cfg.content.splice(i,1);await saveObjCfg(ev,oid,cfg,sha,"Remove content");
-    // удаляем файл
-    try{const r=await odApi(`outdoor/${ev}/${it.src}`);if(r.ok){const d=await r.json();await odApi(`outdoor/${ev}/${it.src}`,{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"del",sha:d.sha})});}}catch(e){}
-    toast("Удалено");openEvent(ev);}catch(e){toast(e.message,"err");}
-  hideOv();
+function removeContent(ev,oid,i){
+  const st=window.__odCfg[oid];if(!st)return;
+  st.cfg.content.splice(i,1);st.dirty=true;
+  renderContentList(ev,oid);
+  markDirtyBadge(oid);
+  toast("Удалено (не забудьте «Сохранить сцену»)");
 }
 
-async function updContentMode(ev,oid,i,mode){try{const{cfg,sha}=await loadObjCfg(ev,oid);cfg.content[i].mode=mode;await saveObjCfg(ev,oid,cfg,sha,"Content mode");toast("Сохранено");}catch(e){toast(e.message,"err");}}
+function updContentMode(ev,oid,i,mode){
+  const st=window.__odCfg[oid];if(!st)return;
+  st.cfg.content[i].mode=mode;st.dirty=true;
+  markDirtyBadge(oid);
+}
 
 async function uploadAnchor(ev,oid,input){
   const file=input.files[0];if(!file)return;
