@@ -2,13 +2,6 @@
   "id": "test1",
   "title": "test2",
   "displayMode": "world",
-  "content": [
-    {
-      "type": "video",
-      "src": "assets/test1-mrhyk4i8.mp4",
-      "mode": "plane",
-      "loop": true
-    }
-  ],
+  "content": [],
   "interactive": false
 }
