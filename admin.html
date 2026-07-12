@@ -424,17 +424,18 @@ function buildObjectCard(ev,oid,cfg){
   const card=document.createElement("div");card.className="card";card.id="odc-"+oid;
   const modeLabels={world:"В пространстве",overlay:"На весь экран",image:"На картинке-якоре"};
   const nContent=(cfg.content||[]).length;
+  const isImage=cfg.displayMode==='image';
   card.innerHTML=`<div class="card-header" onclick="toggleOdCard('${oid}')">
-    <div class="thumb-empty">${cfg.displayMode==='image'?'🖼':cfg.displayMode==='overlay'?'📺':'🌐'}</div>
+    <div class="thumb-empty">${isImage?'🖼':cfg.displayMode==='overlay'?'📺':'🌐'}</div>
     <div class="card-meta"><div style="font-size:14px;font-weight:500;">${cfg.title||oid}</div>
     <div class="sub">${modeLabels[cfg.displayMode]||'—'} · ${nContent} элем.${cfg.gps?' · 📍 GPS':''}${cfg.interactive?' · ✋':''}</div></div>
     <div onclick="event.stopPropagation()"><a class="btn btn-outline" href="${url}" target="_blank">👁</a> <button class="btn btn-red" onclick="deleteObject('${ev}','${oid}')">✕</button></div></div>
     <div class="card-body" id="odbody-${oid}">
-      <div class="field-row"><label>Название</label><input value="${cfg.title||oid}" onblur="updObjField('${ev}','${oid}','title',this.value)"></div>
+      <div class="field-row"><label>Название</label><input id="odtitle-${oid}" value="${cfg.title||oid}" onblur="updObjField('${ev}','${oid}','title',this.value)"></div>
       <div class="field-row"><label>Режим показа</label><select onchange="updObjField('${ev}','${oid}','displayMode',this.value)">
         <option value="world" ${cfg.displayMode==='world'?'selected':''}>В пространстве перед камерой</option>
         <option value="overlay" ${cfg.displayMode==='overlay'?'selected':''}>На весь экран поверх камеры</option>
-        <option value="image" ${cfg.displayMode==='image'?'selected':''}>На картинке-якоре</option>
+        <option value="image" ${isImage?'selected':''}>На картинке-якоре</option>
       </select></div>
       <div class="field-row"><label>Интерактив зрителя</label><label class="toggle"><input type="checkbox" ${cfg.interactive?'checked':''} onchange="updObjField('${ev}','${oid}','interactive',this.checked)"> вращение/масштаб пальцами</label></div>
 
@@ -445,9 +446,12 @@ function buildObjectCard(ev,oid,cfg){
         <div class="file-input-wrap"><button class="btn btn-outline">＋ Видео</button><input type="file" accept=".mp4,.webm" onchange="addContent('${ev}','${oid}','video',this)"></div>
         <div class="file-input-wrap"><button class="btn btn-outline">＋ Картинка</button><input type="file" accept=".jpg,.jpeg,.png" onchange="addContent('${ev}','${oid}','image',this)"></div>
       </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:0.4rem;">Макс. размер файла ~25 МБ (ограничение GitHub).</div>
 
-      ${cfg.displayMode==='image'?`<div style="margin:0.75rem 0 0.5rem;font-size:12px;color:var(--muted);text-transform:uppercase;">Картинка-якорь</div>
-      <div class="field-row"><label>${cfg.anchorImage?'✓ загружен':'не загружен'}</label><div class="file-input-wrap"><button class="btn btn-outline">⬆ Загрузить якорь</button><input type="file" accept=".jpg,.jpeg,.png" onchange="uploadAnchor('${ev}','${oid}',this)"></div></div>`:''}
+      ${isImage?`<div style="margin:0.75rem 0 0.5rem;font-size:12px;color:var(--muted);text-transform:uppercase;">Картинка-якорь</div>
+      <div class="field-row"><label>Использовать QR</label><label class="toggle"><input type="checkbox" ${cfg.useQrAsAnchor?'checked':''} onchange="toggleQrAnchor('${ev}','${oid}',this.checked)"> QR-код как якорь</label></div>
+      ${cfg.useQrAsAnchor?`<div style="font-size:11px;color:var(--muted);margin-bottom:0.5rem;">Якорь = QR этого объекта. Сгенерируйте QR ниже, затем нажмите «Скомпилировать якорь».</div>`:`<div class="field-row"><label>${cfg.anchorImage?'✓ загружен':'не загружен'}</label><div class="file-input-wrap"><button class="btn btn-outline">⬆ Загрузить якорь</button><input type="file" accept=".jpg,.jpeg,.png" onchange="uploadAnchor('${ev}','${oid}',this)"></div></div>`}
+      <button class="btn btn-ghost" onclick="compileAnchor('${ev}','${oid}')">⚙️ Скомпилировать якорь (.mind)</button>`:''}
 
       <div style="margin:0.75rem 0 0.5rem;font-size:12px;color:var(--muted);text-transform:uppercase;">GPS (для карты)</div>
       <div class="field-row"><label>Широта</label><input id="lat-${oid}" value="${cfg.gps?cfg.gps.lat:''}" placeholder="напр. 44.8176"></div>
@@ -457,7 +461,11 @@ function buildObjectCard(ev,oid,cfg){
       <div style="margin:0.75rem 0 0.5rem;font-size:12px;color:var(--muted);text-transform:uppercase;">QR-код</div>
       <div class="qr-box"><div id="qr-${oid}"></div><div class="qr-caption">${url}</div>
       <div style="margin-top:0.5rem;"><button class="btn btn-blue" onclick="genQr('${ev}','${oid}')">Сгенерировать / обновить QR</button>
-      <button class="btn btn-ghost" onclick="downloadQr('${oid}')">⬇ Скачать PNG</button></div></div>
+      <button class="btn btn-ghost" onclick="downloadQr('${ev}','${oid}')">⬇ Скачать PNG</button></div></div>
+
+      <div style="margin-top:1rem;border-top:1px solid var(--border);padding-top:0.75rem;">
+        <button class="btn btn-green" style="width:100%;padding:0.6rem;font-weight:600;" onclick="saveScene('${ev}','${oid}')">💾 Сохранить сцену</button>
+      </div>
     </div>`;
   setTimeout(()=>renderContentList(ev,oid,cfg),0);
   return card;
@@ -512,22 +520,27 @@ async function updObjField(ev,oid,field,val){
 
 async function addContent(ev,oid,type,input){
   const file=input.files[0];if(!file)return;
+  const MAX=25*1024*1024;
+  if(file.size>MAX){toast("Файл слишком большой ("+(file.size/1024/1024).toFixed(1)+" МБ). Максимум 25 МБ.","err");input.value="";return;}
   const ext=file.name.split('.').pop().toLowerCase();
   const fname=`${oid}-${Date.now().toString(36)}.${ext}`;
   const path=`outdoor/${ev}/assets/${fname}`;
   showOv("Загрузка "+file.name,(file.size/1024/1024).toFixed(1)+" MB");
   try{
-    const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=rej;r.readAsDataURL(file);});
-    await odApi(path,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"upload "+fname,content:b64})});
+    const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=()=>rej(new Error("Чтение файла не удалось"));r.readAsDataURL(file);});
+    const up=await odApi(path,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"upload "+fname,content:b64})});
+    if(!up.ok){const e=await up.json().catch(()=>({}));throw new Error("Загрузка не удалась: "+(e.message||up.status));}
     const{cfg,sha}=await loadObjCfg(ev,oid);
     cfg.content=cfg.content||[];
     const item={type,src:`assets/${fname}`};
     if(type==='model'){item.position={x:0,y:0,z:cfg.displayMode==='world'?-3:0};item.scale=cfg.displayMode==='image'?0.5:1;}
     else{item.mode='plane';item.loop=true;}
     cfg.content.push(item);
-    await saveObjCfg(ev,oid,cfg,sha,"Add content");
-    toast("Добавлено");openEvent(ev);
+    await saveObjCfg(ev,oid,cfg,sha,"Add content "+type);
+    toast("Добавлено: "+file.name);
+    openEvent(ev);
   }catch(e){toast(e.message,"err");}
+  input.value="";
   hideOv();
 }
 
@@ -550,9 +563,42 @@ async function uploadAnchor(ev,oid,input){
     const path=`outdoor/${ev}/${oid}-anchor.jpg`;
     const check=await odApi(path);const sha0=check.ok?(await check.json()).sha:null;
     const body={message:"anchor",content:b64};if(sha0)body.sha=sha0;
-    await odApi(path,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
-    const{cfg,sha}=await loadObjCfg(ev,oid);cfg.anchorImage=`${oid}-anchor.jpg`;await saveObjCfg(ev,oid,cfg,sha,"Set anchor");
-    toast("Якорь загружен. Нужна компиляция .mind (сделаю позже)");openEvent(ev);
+    const up=await odApi(path,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    if(!up.ok)throw new Error("Загрузка не удалась: "+up.status);
+    const{cfg,sha}=await loadObjCfg(ev,oid);cfg.anchorImage=`${oid}-anchor.jpg`;cfg.useQrAsAnchor=false;await saveObjCfg(ev,oid,cfg,sha,"Set anchor");
+    toast("Якорь загружен. Нажмите «Скомпилировать якорь».");openEvent(ev);
+  }catch(e){toast(e.message,"err");}
+  hideOv();
+}
+
+async function toggleQrAnchor(ev,oid,val){
+  showOv("Сохранение...");
+  try{const{cfg,sha}=await loadObjCfg(ev,oid);cfg.useQrAsAnchor=val;await saveObjCfg(ev,oid,cfg,sha,"QR as anchor");openEvent(ev);}catch(e){toast(e.message,"err");}
+  hideOv();
+}
+
+async function compileAnchor(ev,oid){
+  // Запускает workflow компиляции якоря в .mind
+  showOv("Запуск компиляции якоря...");
+  try{
+    const r=await fetch(API+"/actions/workflows/compile-anchor.yml/dispatches",{method:"POST",headers:{Authorization:"token "+tok(),"Content-Type":"application/json"},body:JSON.stringify({ref:"main",inputs:{object:ev+"/"+oid}})});
+    if(r.ok||r.status===204){toast("Компиляция якоря запущена (~2 мин)");loadRuns();}
+    else throw new Error("Ошибка запуска: "+r.status);
+  }catch(e){toast(e.message,"err");}
+  hideOv();
+}
+
+async function saveScene(ev,oid){
+  showOv("Сохранение сцены...");
+  try{
+    const{cfg,sha}=await loadObjCfg(ev,oid);
+    // Собираем актуальные значения из полей
+    const t=document.getElementById("odtitle-"+oid);if(t)cfg.title=t.value;
+    const lat=parseFloat((document.getElementById("lat-"+oid)||{}).value);
+    const lng=parseFloat((document.getElementById("lng-"+oid)||{}).value);
+    if(!isNaN(lat)&&!isNaN(lng))cfg.gps={lat,lng};
+    await saveObjCfg(ev,oid,cfg,sha,"Save scene "+oid);
+    toast("✅ Сцена сохранена");
   }catch(e){toast(e.message,"err");}
   hideOv();
 }
@@ -580,18 +626,30 @@ async function saveGps(ev,oid){
 function genQr(ev,oid){
   const url=`https://ar.vr-in.net/outdoor/${ev}/${oid}.html`;
   const box=document.getElementById("qr-"+oid);box.innerHTML="";
-  new QRCode(box,{text:url,width:180,height:180,correctLevel:QRCode.CorrectLevel.H});
+  new QRCode(box,{text:url,width:220,height:220,correctLevel:QRCode.CorrectLevel.H});
   toast("QR сгенерирован");
-  // Сохраняем в репо как PNG
   setTimeout(async()=>{
-    const canvas=box.querySelector("canvas");if(!canvas)return;
-    const b64=canvas.toDataURL("image/png").split(",")[1];
-    try{const path=`outdoor/${ev}/${oid}.qr.png`;const check=await odApi(path);const sha=check.ok?(await check.json()).sha:null;const body={message:"qr",content:b64};if(sha)body.sha=sha;await odApi(path,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});}catch(e){}
-  },300);
+    const src=box.querySelector("canvas")||box.querySelector("img");
+    if(!src)return;
+    // Рисуем QR + подпись "Work with Internet" на белом холсте
+    const pad=24,cap=40,size=220;
+    const c=document.createElement("canvas");c.width=size+pad*2;c.height=size+pad+cap;
+    const ctx=c.getContext("2d");
+    ctx.fillStyle="#fff";ctx.fillRect(0,0,c.width,c.height);
+    await new Promise(r=>{if(src.tagName==="IMG"&&!src.complete){src.onload=r;}else r();});
+    ctx.drawImage(src,pad,pad,size,size);
+    ctx.fillStyle="#000";ctx.font="16px sans-serif";ctx.textAlign="center";
+    ctx.fillText("Work with Internet",c.width/2,size+pad+26);
+    window.__qrData=window.__qrData||{};
+    window.__qrData[oid]=c.toDataURL("image/png");
+    // Сохраняем в репо
+    try{const b64=c.toDataURL("image/png").split(",")[1];const p=`outdoor/${ev}/${oid}.qr.png`;const ck=await odApi(p);const sha=ck.ok?(await ck.json()).sha:null;const body={message:"qr "+oid,content:b64};if(sha)body.sha=sha;await odApi(p,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});}catch(e){}
+  },400);
 }
-function downloadQr(oid){
-  const canvas=document.querySelector("#qr-"+oid+" canvas");if(!canvas){toast("Сначала сгенерируйте QR","err");return;}
-  const a=document.createElement("a");a.download=oid+"-qr.png";a.href=canvas.toDataURL("image/png");a.click();
+function downloadQr(ev,oid){
+  const data=(window.__qrData||{})[oid];
+  if(!data){toast("Сначала сгенерируйте QR","err");return;}
+  const a=document.createElement("a");a.download=oid+"-qr.png";a.href=data;a.click();
 }
 
 async function deleteObject(ev,oid){
