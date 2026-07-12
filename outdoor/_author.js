@@ -124,6 +124,37 @@ $("btn-reset").addEventListener("click",()=>{
   updateUI();applyToNode();
 });
 
+
+// ── Анимированный GIF как THREE-текстура (через canvas) ──
+const gifTextures = []; // {canvas, ctx, img, tex}
+function makeGifTexture(src, onAspect){
+  const img = document.createElement("img");
+  img.src = src;
+  img.crossOrigin = "anonymous";
+  // держим в DOM невидимым — браузер анимирует GIF только у подключённых элементов
+  img.style.cssText = "position:fixed;width:2px;height:2px;opacity:0.01;pointer-events:none;left:-10px;top:-10px;";
+  document.body.appendChild(img);
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  const tex = new THREE.CanvasTexture(canvas);
+  img.addEventListener("load", () => {
+    canvas.width = img.naturalWidth || 512;
+    canvas.height = img.naturalHeight || 512;
+    onAspect && onAspect(canvas.width / canvas.height);
+  });
+  gifTextures.push({ canvas, ctx, img, tex });
+  return tex;
+}
+function updateGifTextures(){
+  for (const g of gifTextures){
+    if (g.img.complete && g.canvas.width > 0){
+      g.ctx.drawImage(g.img, 0, 0, g.canvas.width, g.canvas.height);
+      g.tex.needsUpdate = true;
+    }
+  }
+}
+const isGif = (src) => /\.gif(\?|$)/i.test(src);
+
 function makeVideo(src){
   const v=document.createElement("video");
   v.src=src;v.loop=true;v.muted=true;v.playsInline=true;
@@ -156,7 +187,10 @@ async function buildContent(parent, loader){
       }catch(e){console.log("model",i,e.message);}
     } else {
       let tex;
-      if(item.type==="image")tex=new THREE.TextureLoader().load(item.src);
+      if(item.type==="image"){
+        if(isGif(item.src))tex=makeGifTexture(item.src);
+        else tex=new THREE.TextureLoader().load(item.src);
+      }
       else{const vv=makeVideo(item.src);vids.push(vv);tex=new THREE.VideoTexture(vv);}
       node=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide,transparent:true}));
     }
@@ -208,7 +242,7 @@ async function buildContent(parent, loader){
         });
       }, 300);
       setStatus("Наведите на якорь");
-      renderer.setAnimationLoop(()=>renderer.render(scene,camera));
+      renderer.setAnimationLoop(()=>{updateGifTextures();renderer.render(scene,camera);});
     } else {
       // world: камера + свободная сцена
       const video=document.createElement("video");
@@ -230,7 +264,7 @@ async function buildContent(parent, loader){
       vids.forEach(v=>v.play().catch(()=>{}));
       updateUI();
       addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
-      renderer.setAnimationLoop(()=>renderer.render(scene,camera));
+      renderer.setAnimationLoop(()=>{updateGifTextures();renderer.render(scene,camera);});
       setStatus("");
     }
   }catch(err){setStatus("Ошибка: "+(err.message||err));}
