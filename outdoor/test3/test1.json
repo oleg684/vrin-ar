@@ -2,6 +2,18 @@
   "id": "test1",
   "title": "Тестовый памятник",
   "displayMode": "world",
-  "content": [],
-  "interactive": true
+  "content": [
+    {
+      "type": "video",
+      "src": "assets/test1__VRplanair.mp4",
+      "name": "VRplanair.mp4",
+      "mode": "plane",
+      "loop": true
+    }
+  ],
+  "interactive": true,
+  "gps": {
+    "lat": 44.811439,
+    "lng": 20.457868
+  }
 }
