@@ -436,7 +436,7 @@ function renderCardInner(ev,oid,cfg){
   const dirty=(window.__odCfg[oid]||{}).dirty;
   return `<div class="card-header" onclick="toggleOdCard('${oid}')">
     <div class="thumb-empty">${isImage?'🖼':cfg.displayMode==='overlay'?'📺':'🌐'}</div>
-    <div class="card-meta"><div style="font-size:14px;font-weight:500;">${cfg.title||oid}${dirty?' <span style="color:#fbbf24;font-size:11px;">● не сохранено</span>':''}</div>
+    <div class="card-meta"><div style="font-size:14px;font-weight:500;">${cfg.title||oid} <span id="statusbadge-${oid}" style="font-size:12px;color:${dirty?'#f87171':'#4ade80'};" title="${dirty?'Не сохранено':'Готово'}">●</span></div>
     <div class="sub">${modeLabels[cfg.displayMode]||'—'} · ${nContent} элем.${cfg.gps?' · 📍 GPS':''}${cfg.interactive?' · ✋':''}</div></div>
     <div onclick="event.stopPropagation()"><a class="btn btn-outline" href="${url}" target="_blank">👁</a> <button class="btn btn-red" onclick="deleteObject('${ev}','${oid}')">✕</button></div></div>
     <div class="card-body" id="odbody-${oid}">
@@ -473,12 +473,38 @@ function renderCardInner(ev,oid,cfg){
       <button class="btn btn-ghost" onclick="downloadQr('${ev}','${oid}')">⬇ Скачать PNG</button></div></div>
 
       <div style="margin-top:1rem;border-top:1px solid var(--border);padding-top:0.75rem;">
+        <div id="scenestatus-${oid}" style="text-align:center;font-size:12px;margin-bottom:0.5rem;color:${dirty?'#f87171':'#4ade80'};">${dirty?'● Не сохранено':'● Готово'}</div>
         <button class="btn btn-green" style="width:100%;padding:0.7rem;font-weight:600;font-size:14px;" onclick="saveScene('${ev}','${oid}')">💾 Сохранить сцену</button>
       </div>
     </div>`;
 }
 
-function markDirty(oid){ if(window.__odCfg&&window.__odCfg[oid]) window.__odCfg[oid].dirty=true; }
+
+// ── Индикатор состояния сцены: red=не сохранено, yellow=в процессе, green=готово ──
+function setSceneStatus(oid, state, note){
+  const el=document.getElementById("scenestatus-"+oid);
+  if(!el)return;
+  const map={
+    red:   {c:"#f87171", t:"● Не сохранено"},
+    yellow:{c:"#fbbf24", t:"● "+(note||"В процессе...")},
+    green: {c:"#4ade80", t:"● Готово"}
+  };
+  const s=map[state]||map.green;
+  el.style.color=s.c;
+  el.textContent=s.t;
+  // Бейдж в шапке карточки
+  const badge=document.getElementById("statusbadge-"+oid);
+  if(badge){badge.style.color=s.c;badge.textContent="●";badge.title=s.t;}
+}
+function sceneStatusOf(oid){
+  const st=window.__odCfg[oid];
+  if(!st)return "green";
+  if(st.compiling)return "yellow";
+  if(st.dirty)return "red";
+  return "green";
+}
+
+function markDirty(oid){ if(window.__odCfg&&window.__odCfg[oid]){window.__odCfg[oid].dirty=true;setSceneStatus(oid,"red");} }
 
 // Перерисовать тело карточки на месте, не сворачивая
 function rerenderCard(ev,oid){
@@ -565,11 +591,7 @@ function updObjField(ev,oid,field,val){
   if(field==='displayMode'){ rerenderCard(ev,oid); }
   else { markDirtyBadge(oid); }
 }
-function markDirtyBadge(oid){
-  const st=window.__odCfg[oid];if(!st)return;
-  const meta=document.querySelector("#odc-"+oid+" .card-meta > div");
-  if(meta && !meta.querySelector('span')){ meta.innerHTML+=' <span style="color:#fbbf24;font-size:11px;">● не сохранено</span>'; }
-}
+function markDirtyBadge(oid){ setSceneStatus(oid,"red"); }
 
 async function addContent(ev,oid,type,input){
   const file=input.files[0];if(!file)return;
@@ -624,7 +646,7 @@ async function uploadAnchor(ev,oid,input){
     const body={message:"anchor",content:b64};if(sha0)body.sha=sha0;
     const up=await odApi(path,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
     if(!up.ok)throw new Error("Загрузка не удалась: "+up.status);
-    const st=window.__odCfg[oid];st.cfg.anchorImage=`${oid}-anchor.jpg`;st.cfg.useQrAsAnchor=false;st.dirty=true;
+    const st=window.__odCfg[oid];st.cfg.anchorImage=`${oid}-anchor.jpg`;st.cfg.useQrAsAnchor=false;st.cfg.anchorMind=undefined;st.dirty=true;
     rerenderCard(ev,oid);
     toast("Якорь загружен. «Сохранить сцену», затем «Скомпилировать якорь».");
   }catch(e){toast(e.message,"err");}
@@ -635,8 +657,10 @@ function toggleQrAnchor(ev,oid,val){
   const st=window.__odCfg[oid];if(!st)return;
   st.cfg.useQrAsAnchor=val;
   if(val)st.cfg.anchorImage=undefined;
+  st.cfg.anchorMind=undefined;
   st.dirty=true;
   rerenderCard(ev,oid);
+  setSceneStatus(oid,"red");
 }
 
 async function compileAnchor(ev,oid){
@@ -652,24 +676,79 @@ async function compileAnchor(ev,oid){
 
 async function saveScene(ev,oid){
   const st=window.__odCfg[oid];if(!st){toast("Нет данных","err");return;}
+  setSceneStatus(oid,"yellow","Сохранение...");
   showOv("Сохранение сцены...");
   try{
-    // Актуальные значения из полей
     const t=document.getElementById("odtitle-"+oid);if(t)st.cfg.title=t.value;
     const lat=parseFloat((document.getElementById("lat-"+oid)||{}).value);
     const lng=parseFloat((document.getElementById("lng-"+oid)||{}).value);
     if(!isNaN(lat)&&!isNaN(lng))st.cfg.gps={lat,lng};
-    // Берём свежий sha чтобы не словить конфликт
     const cur=await odApi(`outdoor/${ev}/${oid}.json?ref=main&t=`+Date.now());
     let sha=st.sha;
     if(cur.ok){sha=(await cur.json()).sha;}
     const r=await odApi(`outdoor/${ev}/${oid}.json`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"Save scene "+oid,content:b64enc(JSON.stringify(st.cfg,null,2)),sha})});
     if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.message||r.status);}
     st.sha=(await r.json()).content.sha;st.dirty=false;
-    rerenderCard(ev,oid);
-    toast("✅ Сцена сохранена");
-  }catch(e){toast("Ошибка: "+e.message,"err");}
-  hideOv();
+    hideOv();
+    // Автокомпиляция якоря: режим image и якорь ещё не скомпилирован (или изменился источник)
+    const needsAnchor = st.cfg.displayMode==='image' && (st.cfg.useQrAsAnchor||st.cfg.anchorImage);
+    if(needsAnchor && !st.cfg.anchorMind){
+      st.compiling=true;
+      setSceneStatus(oid,"yellow","Компиляция якоря... (~2 мин)");
+      toast("Сцена сохранена, компилирую якорь...");
+      const cr=await fetch(API+"/actions/workflows/compile-anchor.yml/dispatches",{method:"POST",headers:{Authorization:"token "+tok(),"Content-Type":"application/json"},body:JSON.stringify({ref:"main",inputs:{object:ev+"/"+oid}})});
+      if(cr.ok||cr.status===204){
+        watchAnchorCompile(ev,oid);
+      } else {
+        st.compiling=false;
+        setSceneStatus(oid,"red");
+        toast("Не удалось запустить компиляцию: "+cr.status,"err");
+      }
+    } else {
+      setSceneStatus(oid,"green");
+      toast("✅ Сцена сохранена");
+    }
+  }catch(e){
+    hideOv();
+    setSceneStatus(oid,"red");
+    toast("Ошибка: "+e.message,"err");
+  }
+}
+
+// Следит за завершением компиляции якоря
+async function watchAnchorCompile(ev,oid){
+  const st=window.__odCfg[oid];
+  for(let i=0;i<40;i++){
+    await new Promise(r=>setTimeout(r,10000));
+    try{
+      // Проверяем появился ли anchorMind в конфиге (workflow его прописывает)
+      const cr=await odApi(`outdoor/${ev}/${oid}.json?ref=main&t=`+Date.now());
+      if(cr.ok){
+        const cd=await cr.json();
+        const fresh=JSON.parse(b64dec(cd.content));
+        if(fresh.anchorMind){
+          st.cfg.anchorMind=fresh.anchorMind;st.sha=cd.sha;st.compiling=false;
+          setSceneStatus(oid,"green");
+          toast("✅ Якорь скомпилирован — сцена готова");
+          return;
+        }
+      }
+      // Или workflow упал?
+      const runsR=await fetch(API+"/actions/workflows/compile-anchor.yml/runs?per_page=1",{headers:{Authorization:"token "+tok()}});
+      if(runsR.ok){
+        const run=(await runsR.json()).workflow_runs[0];
+        if(run&&run.status==='completed'&&run.conclusion==='failure'){
+          st.compiling=false;
+          setSceneStatus(oid,"red");
+          toast("Компиляция якоря упала — смотри Actions","err");
+          return;
+        }
+      }
+    }catch(e){}
+  }
+  st.compiling=false;
+  setSceneStatus(oid,"red");
+  toast("Компиляция якоря не завершилась за 6 мин","err");
 }
 
 // ── GPS ──
