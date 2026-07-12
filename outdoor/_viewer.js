@@ -116,7 +116,9 @@ async function initWorld(cfg) {
         if((item.opacity ?? 1) < 1){ m.traverse(o=>{ if(o.isMesh&&o.material){ o.material.transparent=true; o.material.opacity=item.opacity; } }); }
         const wrap=new THREE.Group(); wrap.add(m);
         const p=item.position||{x:0,y:0,z:-3}; wrap.position.set(p.x,p.y,p.z ?? -3);
-        wrap.scale.setScalar(item.scale||1); group.add(wrap);
+        wrap.scale.setScalar(item.scale||1);
+        if(item.rotationY) wrap.rotation.y = THREE.MathUtils.degToRad(item.rotationY);
+        group.add(wrap);
       } catch(e){ console.log("model fail", e.message); }
     } else {
       let tex, plane;
@@ -129,7 +131,9 @@ async function initWorld(cfg) {
       const mat = new THREE.MeshBasicMaterial({ map:tex, side:THREE.DoubleSide, transparent:true, opacity: item.opacity ?? 1 });
       plane = new THREE.Mesh(new THREE.PlaneGeometry(1,1), mat);
       const p=item.position||{x:0,y:0,z:-3}; plane.position.set(p.x,p.y,p.z ?? -3);
-      plane.scale.setScalar(item.scale||1); group.add(plane);
+      plane.scale.setScalar(item.scale||1);
+      if(item.rotationY) plane.rotation.y = THREE.MathUtils.degToRad(item.rotationY);
+      group.add(plane);
     }
   }
 
@@ -185,7 +189,9 @@ async function initImage(cfg) {
         if((item.opacity ?? 1) < 1){ m.traverse(o=>{ if(o.isMesh&&o.material){ o.material.transparent=true; o.material.opacity=item.opacity; } }); }
         const wrap=new THREE.Group(); wrap.add(m);
         const p=item.position||{x:0,y:0,z:0}; wrap.position.set(p.x,p.y,p.z);
-        wrap.scale.setScalar(item.scale||0.5); anchor.group.add(wrap);
+        wrap.scale.setScalar(item.scale||0.5);
+        if(item.rotationY) wrap.rotation.y = THREE.MathUtils.degToRad(item.rotationY);
+        anchor.group.add(wrap);
       } catch(e){ console.log(e.message); }
     } else {
       let tex, plane;
@@ -193,6 +199,7 @@ async function initImage(cfg) {
       else { const vv=makeVideo(item.src,item.loop); tex=new THREE.VideoTexture(vv); vv.addEventListener("loadedmetadata",()=>{const a=vv.videoWidth/vv.videoHeight;plane.scale.set(a,1,1);}); }
       plane=new THREE.Mesh(new THREE.PlaneGeometry(1,1), new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide,transparent:true,opacity:item.opacity ?? 1}));
       const p=item.position||{x:0,y:0,z:0}; plane.position.set(p.x,p.y,p.z); plane.scale.setScalar(item.scale||1);
+      if(item.rotationY) plane.rotation.y = THREE.MathUtils.degToRad(item.rotationY);
       anchor.group.add(plane);
     }
   }
