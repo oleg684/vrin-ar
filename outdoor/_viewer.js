@@ -64,11 +64,11 @@ async function initOverlay(cfg) {
     if (item.type === "image") {
       const img = document.createElement("img");
       img.src = item.src;
-      img.style.cssText = "max-width:92%;max-height:75%;object-fit:contain;border-radius:8px;";
+      img.style.cssText = "max-width:92%;max-height:75%;object-fit:contain;border-radius:8px;opacity:"+(item.opacity ?? 1)+";";
       layer.appendChild(img);
     } else if (item.type === "video") {
       const v = makeVideo(item.src, item.loop);
-      v.style.cssText = "max-width:95%;max-height:80%;border-radius:8px;";
+      v.style.cssText = "max-width:95%;max-height:80%;border-radius:8px;opacity:"+(item.opacity ?? 1)+";";
       v.controls = true;
       layer.appendChild(v);
     }
@@ -89,8 +89,8 @@ async function initWorld(cfg) {
     layer.style.cssText = "position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1rem;padding:1rem;pointer-events:none;";
     document.body.appendChild(layer);
     for (const item of fullscreenItems) {
-      if (item.type==="image"){ const img=document.createElement("img");img.src=item.src;img.style.cssText="max-width:92%;max-height:75%;object-fit:contain;pointer-events:auto;border-radius:8px;";layer.appendChild(img); }
-      else { const v=makeVideo(item.src,item.loop);v.style.cssText="max-width:95%;max-height:80%;pointer-events:auto;border-radius:8px;";v.controls=true;layer.appendChild(v); }
+      if (item.type==="image"){ const img=document.createElement("img");img.src=item.src;img.style.cssText="max-width:92%;max-height:75%;object-fit:contain;pointer-events:auto;border-radius:8px;opacity:"+(item.opacity ?? 1)+";";layer.appendChild(img); }
+      else { const v=makeVideo(item.src,item.loop);v.style.cssText="max-width:95%;max-height:80%;pointer-events:auto;border-radius:8px;opacity:"+(item.opacity ?? 1)+";";v.controls=true;layer.appendChild(v); }
     }
   }
 
@@ -113,6 +113,7 @@ async function initWorld(cfg) {
         const gltf = await new Promise((res,rej)=>loader.load(item.src,res,undefined,rej));
         const m=gltf.scene; const box=new THREE.Box3().setFromObject(m);
         m.position.sub(box.getCenter(new THREE.Vector3()));
+        if((item.opacity ?? 1) < 1){ m.traverse(o=>{ if(o.isMesh&&o.material){ o.material.transparent=true; o.material.opacity=item.opacity; } }); }
         const wrap=new THREE.Group(); wrap.add(m);
         const p=item.position||{x:0,y:0,z:-3}; wrap.position.set(p.x,p.y,p.z ?? -3);
         wrap.scale.setScalar(item.scale||1); group.add(wrap);
@@ -125,7 +126,7 @@ async function initWorld(cfg) {
         const vv = makeVideo(item.src, item.loop); tex = new THREE.VideoTexture(vv);
         vv.addEventListener("loadedmetadata", () => { const a=vv.videoWidth/vv.videoHeight; plane.scale.set(a,1,1); });
       }
-      const mat = new THREE.MeshBasicMaterial({ map:tex, side:THREE.DoubleSide, transparent:true });
+      const mat = new THREE.MeshBasicMaterial({ map:tex, side:THREE.DoubleSide, transparent:true, opacity: item.opacity ?? 1 });
       plane = new THREE.Mesh(new THREE.PlaneGeometry(1,1), mat);
       const p=item.position||{x:0,y:0,z:-3}; plane.position.set(p.x,p.y,p.z ?? -3);
       plane.scale.setScalar(item.scale||1); group.add(plane);
@@ -181,6 +182,7 @@ async function initImage(cfg) {
         const gltf = await new Promise((res,rej)=>loader.load(item.src,res,undefined,rej));
         const m=gltf.scene; const box=new THREE.Box3().setFromObject(m);
         m.position.sub(box.getCenter(new THREE.Vector3()));
+        if((item.opacity ?? 1) < 1){ m.traverse(o=>{ if(o.isMesh&&o.material){ o.material.transparent=true; o.material.opacity=item.opacity; } }); }
         const wrap=new THREE.Group(); wrap.add(m);
         const p=item.position||{x:0,y:0,z:0}; wrap.position.set(p.x,p.y,p.z);
         wrap.scale.setScalar(item.scale||0.5); anchor.group.add(wrap);
@@ -189,7 +191,7 @@ async function initImage(cfg) {
       let tex, plane;
       if(item.type==="image") tex=new THREE.TextureLoader().load(item.src,t=>{const a=t.image.width/t.image.height;plane.scale.set(a,1,1);});
       else { const vv=makeVideo(item.src,item.loop); tex=new THREE.VideoTexture(vv); vv.addEventListener("loadedmetadata",()=>{const a=vv.videoWidth/vv.videoHeight;plane.scale.set(a,1,1);}); }
-      plane=new THREE.Mesh(new THREE.PlaneGeometry(1,1), new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide,transparent:true}));
+      plane=new THREE.Mesh(new THREE.PlaneGeometry(1,1), new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide,transparent:true,opacity:item.opacity ?? 1}));
       const p=item.position||{x:0,y:0,z:0}; plane.position.set(p.x,p.y,p.z); plane.scale.setScalar(item.scale||1);
       anchor.group.add(plane);
     }
