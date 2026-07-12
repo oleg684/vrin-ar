@@ -412,26 +412,35 @@ async function openEvent(ev){
     const objs=items.filter(x=>x.name&&x.name.endsWith(".json")).map(x=>x.name.replace(".json",""));
     v.innerHTML=`<div class="section-header"><h2>Объекты — ${ev}</h2><span class="count">${objs.length}</span></div><div id="od-objs"></div><div class="add-card" onclick="showNewObject()"><div class="icon">＋</div>Добавить объект</div><div id="od-newobj"></div>`;
     const list=document.getElementById("od-objs");
+    window.__odCfg=window.__odCfg||{};
     for(const oid of objs){
-      let cfg={};try{const cr=await odApi(`outdoor/${ev}/${oid}.json?ref=main&t=`+Date.now());if(cr.ok){const cd=await cr.json();cfg=JSON.parse(b64dec(cd.content));}}catch(e){}
+      let cfg={};let sha=null;try{const cr=await odApi(`outdoor/${ev}/${oid}.json?ref=main&t=`+Date.now());if(cr.ok){const cd=await cr.json();cfg=JSON.parse(b64dec(cd.content));sha=cd.sha;}}catch(e){}
+      window.__odCfg[oid]={cfg,sha,dirty:false};
       list.appendChild(buildObjectCard(ev,oid,cfg));
     }
   }catch(e){v.innerHTML='<div style="color:#f87171;">Ошибка: '+e.message+'</div>';}
 }
 
 function buildObjectCard(ev,oid,cfg){
-  const url=`https://ar.vr-in.net/outdoor/${ev}/${oid}.html`;
   const card=document.createElement("div");card.className="card";card.id="odc-"+oid;
+  card.innerHTML=renderCardInner(ev,oid,cfg);
+  setTimeout(()=>renderContentList(ev,oid),0);
+  return card;
+}
+
+function renderCardInner(ev,oid,cfg){
+  const url=`https://ar.vr-in.net/outdoor/${ev}/${oid}.html`;
   const modeLabels={world:"В пространстве",overlay:"На весь экран",image:"На картинке-якоре"};
   const nContent=(cfg.content||[]).length;
   const isImage=cfg.displayMode==='image';
-  card.innerHTML=`<div class="card-header" onclick="toggleOdCard('${oid}')">
+  const dirty=(window.__odCfg[oid]||{}).dirty;
+  return `<div class="card-header" onclick="toggleOdCard('${oid}')">
     <div class="thumb-empty">${isImage?'🖼':cfg.displayMode==='overlay'?'📺':'🌐'}</div>
-    <div class="card-meta"><div style="font-size:14px;font-weight:500;">${cfg.title||oid}</div>
+    <div class="card-meta"><div style="font-size:14px;font-weight:500;">${cfg.title||oid}${dirty?' <span style="color:#fbbf24;font-size:11px;">● не сохранено</span>':''}</div>
     <div class="sub">${modeLabels[cfg.displayMode]||'—'} · ${nContent} элем.${cfg.gps?' · 📍 GPS':''}${cfg.interactive?' · ✋':''}</div></div>
     <div onclick="event.stopPropagation()"><a class="btn btn-outline" href="${url}" target="_blank">👁</a> <button class="btn btn-red" onclick="deleteObject('${ev}','${oid}')">✕</button></div></div>
     <div class="card-body" id="odbody-${oid}">
-      <div class="field-row"><label>Название</label><input id="odtitle-${oid}" value="${cfg.title||oid}" onblur="updObjField('${ev}','${oid}','title',this.value)"></div>
+      <div class="field-row"><label>Название</label><input id="odtitle-${oid}" value="${(cfg.title||oid).replace(/"/g,'&quot;')}" oninput="updObjField('${ev}','${oid}','title',this.value)"></div>
       <div class="field-row"><label>Режим показа</label><select onchange="updObjField('${ev}','${oid}','displayMode',this.value)">
         <option value="world" ${cfg.displayMode==='world'?'selected':''}>В пространстве перед камерой</option>
         <option value="overlay" ${cfg.displayMode==='overlay'?'selected':''}>На весь экран поверх камеры</option>
@@ -443,20 +452,20 @@ function buildObjectCard(ev,oid,cfg){
       <div id="odcontent-${oid}"></div>
       <div style="display:flex;gap:0.4rem;margin-top:0.5rem;flex-wrap:wrap;">
         <div class="file-input-wrap"><button class="btn btn-outline">＋ 3D (GLB)</button><input type="file" accept=".glb" onchange="addContent('${ev}','${oid}','model',this)"></div>
-        <div class="file-input-wrap"><button class="btn btn-outline">＋ Видео</button><input type="file" accept=".mp4,.webm" onchange="addContent('${ev}','${oid}','video',this)"></div>
+        <div class="file-input-wrap"><button class="btn btn-outline">＋ Видео</button><input type="file" accept=".mp4,.webm,.mov" onchange="addContent('${ev}','${oid}','video',this)"></div>
         <div class="file-input-wrap"><button class="btn btn-outline">＋ Картинка</button><input type="file" accept=".jpg,.jpeg,.png" onchange="addContent('${ev}','${oid}','image',this)"></div>
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:0.4rem;">Макс. размер файла ~25 МБ (ограничение GitHub).</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:0.4rem;">Файл загружается сразу. Остальные настройки — по кнопке «Сохранить сцену». Макс. ~25 МБ.</div>
 
       ${isImage?`<div style="margin:0.75rem 0 0.5rem;font-size:12px;color:var(--muted);text-transform:uppercase;">Картинка-якорь</div>
       <div class="field-row"><label>Использовать QR</label><label class="toggle"><input type="checkbox" ${cfg.useQrAsAnchor?'checked':''} onchange="toggleQrAnchor('${ev}','${oid}',this.checked)"> QR-код как якорь</label></div>
-      ${cfg.useQrAsAnchor?`<div style="font-size:11px;color:var(--muted);margin-bottom:0.5rem;">Якорь = QR этого объекта. Сгенерируйте QR ниже, затем нажмите «Скомпилировать якорь».</div>`:`<div class="field-row"><label>${cfg.anchorImage?'✓ загружен':'не загружен'}</label><div class="file-input-wrap"><button class="btn btn-outline">⬆ Загрузить якорь</button><input type="file" accept=".jpg,.jpeg,.png" onchange="uploadAnchor('${ev}','${oid}',this)"></div></div>`}
+      ${cfg.useQrAsAnchor?`<div style="font-size:11px;color:var(--muted);margin-bottom:0.5rem;">Якорь = QR этого объекта. Сгенерируйте QR ниже, затем «Скомпилировать якорь».</div>`:`<div class="field-row"><label>${cfg.anchorImage?'✓ загружен':'не загружен'}</label><div class="file-input-wrap"><button class="btn btn-outline">⬆ Загрузить якорь</button><input type="file" accept=".jpg,.jpeg,.png" onchange="uploadAnchor('${ev}','${oid}',this)"></div></div>`}
       <button class="btn btn-ghost" onclick="compileAnchor('${ev}','${oid}')">⚙️ Скомпилировать якорь (.mind)</button>`:''}
 
       <div style="margin:0.75rem 0 0.5rem;font-size:12px;color:var(--muted);text-transform:uppercase;">GPS (для карты)</div>
-      <div class="field-row"><label>Широта</label><input id="lat-${oid}" value="${cfg.gps?cfg.gps.lat:''}" placeholder="напр. 44.8176"></div>
-      <div class="field-row"><label>Долгота</label><input id="lng-${oid}" value="${cfg.gps?cfg.gps.lng:''}" placeholder="напр. 20.4633"></div>
-      <div style="display:flex;gap:0.4rem;"><button class="btn btn-ghost" onclick="takeGps('${oid}')">📍 Взять с телефона</button><button class="btn btn-blue" onclick="saveGps('${ev}','${oid}')">Сохранить GPS</button></div>
+      <div class="field-row"><label>Широта</label><input id="lat-${oid}" value="${cfg.gps?cfg.gps.lat:''}" placeholder="напр. 44.8176" oninput="markDirty('${oid}')"></div>
+      <div class="field-row"><label>Долгота</label><input id="lng-${oid}" value="${cfg.gps?cfg.gps.lng:''}" placeholder="напр. 20.4633" oninput="markDirty('${oid}')"></div>
+      <button class="btn btn-ghost" onclick="takeGps('${oid}')">📍 Взять с телефона</button>
 
       <div style="margin:0.75rem 0 0.5rem;font-size:12px;color:var(--muted);text-transform:uppercase;">QR-код</div>
       <div class="qr-box"><div id="qr-${oid}"></div><div class="qr-caption">${url}</div>
@@ -464,11 +473,23 @@ function buildObjectCard(ev,oid,cfg){
       <button class="btn btn-ghost" onclick="downloadQr('${ev}','${oid}')">⬇ Скачать PNG</button></div></div>
 
       <div style="margin-top:1rem;border-top:1px solid var(--border);padding-top:0.75rem;">
-        <button class="btn btn-green" style="width:100%;padding:0.6rem;font-weight:600;" onclick="saveScene('${ev}','${oid}')">💾 Сохранить сцену</button>
+        <button class="btn btn-green" style="width:100%;padding:0.7rem;font-weight:600;font-size:14px;" onclick="saveScene('${ev}','${oid}')">💾 Сохранить сцену</button>
       </div>
     </div>`;
-  setTimeout(()=>renderContentList(ev,oid,cfg),0);
-  return card;
+}
+
+function markDirty(oid){ if(window.__odCfg&&window.__odCfg[oid]) window.__odCfg[oid].dirty=true; }
+
+// Перерисовать тело карточки на месте, не сворачивая
+function rerenderCard(ev,oid){
+  const card=document.getElementById("odc-"+oid);
+  if(!card)return;
+  const wasOpen=document.getElementById("odbody-"+oid)?.classList.contains("open");
+  const wasSelected=card.classList.contains("selected");
+  card.innerHTML=renderCardInner(ev,oid,window.__odCfg[oid].cfg);
+  if(wasOpen)document.getElementById("odbody-"+oid).classList.add("open");
+  if(wasSelected)card.classList.add("selected");
+  renderContentList(ev,oid);
 }
 
 function toggleOdCard(id){const b=document.getElementById("odbody-"+id),c=document.getElementById("odc-"+id),o=b.classList.contains("open");document.querySelectorAll("#od-objs .card-body").forEach(x=>x.classList.remove("open"));document.querySelectorAll("#od-objs .card").forEach(x=>x.classList.remove("selected"));if(!o){b.classList.add("open");c.classList.add("selected");}}
