@@ -7,8 +7,9 @@
       "type": "image",
       "src": "assets/picturelila__IMG_5514.JPG",
       "name": "IMG_5514.JPG",
-      "mode": "plane",
-      "loop": true
+      "mode": "fullscreen",
+      "loop": true,
+      "opacity": 0.85
     }
   ],
   "interactive": true
