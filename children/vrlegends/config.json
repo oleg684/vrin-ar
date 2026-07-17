@@ -41,7 +41,7 @@
       "id": "scene-mrosxicf",
       "title": "Сцена 3",
       "target": "",
-      "model": "",
+      "model": "assets/models/scene-mrosxicf.glb",
       "position": {
         "x": 0,
         "y": 0,
