@@ -1,7 +1,7 @@
 {
   "id": "videolila",
   "title": "Lilavideo",
-  "displayMode": "world",
+  "displayMode": "overlay",
   "content": [
     {
       "type": "video",
