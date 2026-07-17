@@ -92,7 +92,7 @@
       "id": "scene-mrosxm5m",
       "title": "Сцена 6",
       "target": "",
-      "model": "",
+      "model": "assets/models/scene-mrosxm5m.glb",
       "position": {
         "x": 0,
         "y": 0,
