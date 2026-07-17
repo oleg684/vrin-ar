@@ -2,6 +2,14 @@
   "id": "videolila",
   "title": "Lilavideo",
   "displayMode": "world",
-  "content": [],
+  "content": [
+    {
+      "type": "video",
+      "src": "assets/videolila__IMG_5556.MOV",
+      "name": "IMG_5556.MOV",
+      "mode": "plane",
+      "loop": true
+    }
+  ],
   "interactive": true
 }
