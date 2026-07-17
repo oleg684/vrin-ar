@@ -9,14 +9,14 @@
       "target": "assets/targets/scene-mrosxg07.jpg",
       "model": "assets/models/scene-mrosxg07.glb",
       "position": {
-        "x": 0,
-        "y": 0,
+        "x": -1.84,
+        "y": -1.27,
         "z": 0
       },
-      "scale": 0.06,
+      "scale": 0.28,
       "rotation": {
         "x": 0,
-        "y": 0,
+        "y": 1.5,
         "z": 0
       }
     },
