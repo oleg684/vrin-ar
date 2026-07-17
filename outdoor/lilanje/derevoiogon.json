@@ -1,7 +1,7 @@
 {
   "id": "derevoiogon",
   "title": "Lila",
-  "displayMode": "world",
+  "displayMode": "overlay",
   "content": [
     {
       "type": "model",
