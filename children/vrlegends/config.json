@@ -6,7 +6,7 @@
     {
       "id": "scene-mrosxg07",
       "title": "Сцена 1",
-      "target": "",
+      "target": "assets/targets/scene-mrosxg07.jpg",
       "model": "assets/models/scene-mrosxg07.glb",
       "position": {
         "x": 0,
