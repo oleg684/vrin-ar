@@ -94,14 +94,14 @@
       "target": "assets/targets/scene-mrosxm5m.jpg",
       "model": "assets/models/scene-mrosxm5m.glb",
       "position": {
-        "x": 0,
-        "y": 0,
+        "x": -0.27,
+        "y": -0.08,
         "z": 0
       },
       "scale": 0.06,
       "rotation": {
         "x": 0,
-        "y": 0,
+        "y": -80.8,
         "z": 0
       }
     }
