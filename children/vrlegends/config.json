@@ -40,7 +40,7 @@
     {
       "id": "scene-mrosxicf",
       "title": "Сцена 3",
-      "target": "",
+      "target": "assets/targets/scene-mrosxicf.jpg",
       "model": "assets/models/scene-mrosxicf.glb",
       "position": {
         "x": 0,
