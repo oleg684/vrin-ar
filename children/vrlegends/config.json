@@ -43,9 +43,9 @@
       "target": "assets/targets/scene-mrosxicf.jpg",
       "model": "assets/models/scene-mrosxicf.glb",
       "position": {
-        "x": 0.31,
-        "y": -0.6,
-        "z": 1.09
+        "x": 0.63,
+        "y": -0.35,
+        "z": 1.87
       },
       "scale": 0.06,
       "rotation": {
