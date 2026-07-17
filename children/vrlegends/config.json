@@ -23,7 +23,7 @@
     {
       "id": "scene-mrosxh6p",
       "title": "Сцена 2",
-      "target": "",
+      "target": "assets/targets/scene-mrosxh6p.jpg",
       "model": "assets/models/scene-mrosxh6p.glb",
       "position": {
         "x": 0,
