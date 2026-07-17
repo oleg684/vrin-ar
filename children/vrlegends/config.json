@@ -74,7 +74,7 @@
     {
       "id": "scene-mrosxkxv",
       "title": "Сцена 5",
-      "target": "",
+      "target": "assets/targets/scene-mrosxkxv.jpg",
       "model": "assets/models/scene-mrosxkxv.glb",
       "position": {
         "x": 0,
