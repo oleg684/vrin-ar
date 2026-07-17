@@ -2,6 +2,18 @@
   "id": "derevoiogon",
   "title": "Lila",
   "displayMode": "world",
-  "content": [],
+  "content": [
+    {
+      "type": "model",
+      "src": "assets/derevoiogon__Untitled_19.glb",
+      "name": "Untitled_19.glb",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": -3
+      },
+      "scale": 1
+    }
+  ],
   "interactive": true
 }
