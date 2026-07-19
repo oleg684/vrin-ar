@@ -609,12 +609,18 @@ function updObjField(ev,oid,field,val){
 }
 function markDirtyBadge(oid){ setSceneStatus(oid,"red"); }
 
+
+function translitName(s){
+  const map={'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh','з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'h','ц':'c','ч':'ch','ш':'sh','щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya'};
+  return s.toLowerCase().split('').map(ch=>map[ch]!==undefined?map[ch]:ch).join('').replace(/[^a-z0-9._-]/g,"_").replace(/_{2,}/g,"_");
+}
+
 async function addContent(ev,oid,type,input){
   const file=input.files[0];if(!file)return;
   const MAX=25*1024*1024;
   if(file.size>MAX){toast("Файл слишком большой ("+(file.size/1024/1024).toFixed(1)+" МБ). Максимум 25 МБ.","err");input.value="";return;}
   // Оригинальное имя (санитизация), с префиксом oid чтобы не было коллизий между объектами
-  const clean=file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+  const clean=translitName(file.name);
   const fname=`${oid}__${clean}`;
   const path=`outdoor/${ev}/assets/${fname}`;
   showOv("Загрузка "+file.name,(file.size/1024/1024).toFixed(1)+" MB");
@@ -652,7 +658,7 @@ async function uploadObjAudio(ev,oid,input){
   const file=input.files[0];if(!file)return;
   const MAX=25*1024*1024;
   if(file.size>MAX){toast("Файл слишком большой","err");input.value="";return;}
-  const clean=file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+  const clean=translitName(file.name);
   const fname=`${oid}__audio__${clean}`;
   const path=`outdoor/${ev}/assets/${fname}`;
   showOv("Загрузка аудио...",(file.size/1024/1024).toFixed(1)+" MB");
