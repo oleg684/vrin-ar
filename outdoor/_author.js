@@ -155,6 +155,17 @@ function updateGifTextures(){
 }
 const isGif = (src) => /\.gif(\?|$)/i.test(src);
 
+
+function tapGate() {
+  return new Promise(resolve => {
+    const g = document.createElement("div");
+    g.style.cssText = "position:fixed;inset:0;z-index:500;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-family:sans-serif;gap:1rem;cursor:pointer;";
+    g.innerHTML = '<div style="font-size:48px;">✏️</div><div style="font-size:16px;">Нажмите, чтобы запустить режим автора</div>';
+    g.addEventListener("click", () => { g.remove(); resolve(); }, { once:true });
+    document.body.appendChild(g);
+  });
+}
+
 function makeVideo(src){
   const v=document.createElement("video");
   v.src=src;v.loop=true;v.muted=true;v.playsInline=true;
@@ -212,6 +223,9 @@ async function buildContent(parent, loader){
     setStatus("Загрузка...");
     CONFIG=await(await fetch(objName+".json?v="+Date.now())).json();
     if(!(CONFIG.content||[]).length){setStatus("Нет контента — добавьте в админке");return;}
+    // Жест пользователя — без него getUserMedia на Android виснет
+    await tapGate();
+    setStatus("Запуск камеры...");
     if(!sessionToken)showTokenDialog();
 
     const draco=new DRACOLoader();draco.setDecoderPath("https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/");
