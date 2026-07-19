@@ -1,7 +1,36 @@
 {
   "id": "scene1",
   "title": "АвтоQA сцена",
-  "displayMode": "world",
-  "content": [],
-  "interactive": true
+  "displayMode": "image",
+  "useQrAsAnchor": true,
+  "interactive": true,
+  "content": [
+    {
+      "type": "image",
+      "src": "assets/scene1______-________.png",
+      "name": "тест-картинка.png",
+      "mode": "plane",
+      "loop": true,
+      "opacity": 0.6
+    },
+    {
+      "type": "video",
+      "src": "assets/scene1______-_____.mp4",
+      "name": "тест-видео.mp4",
+      "mode": "plane",
+      "loop": true,
+      "sound": true
+    },
+    {
+      "type": "image",
+      "src": "assets/scene1______-___.gif",
+      "name": "тест-гиф.gif",
+      "mode": "plane",
+      "loop": true
+    }
+  ],
+  "audio": "assets/scene1__audio_____.wav",
+  "audioName": "фон.wav",
+  "audioLoop": true,
+  "audioVolume": 0.8
 }
