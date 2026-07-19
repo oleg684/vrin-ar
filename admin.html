@@ -863,7 +863,13 @@ function downloadQr(ev,oid){
 async function deleteObject(ev,oid){
   if(!confirm("Удалить объект "+oid+"?"))return;
   showOv("Удаление...");
-  async function del(p){const r=await odApi(p);if(!r.ok)return;const d=await r.json();await odApi(p,{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"del",sha:d.sha})});}
+  async function del(p){
+    const r=await odApi(p+"?ref=main&t="+Date.now());
+    if(!r.ok)return;
+    const d=await r.json();
+    const dr=await odApi(p,{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"del "+p,sha:d.sha})});
+    if(!dr.ok)console.warn("delete failed",p,dr.status);
+  }
   try{await del(`outdoor/${ev}/${oid}.json`);await del(`outdoor/${ev}/${oid}.html`);await del(`outdoor/${ev}/${oid}.qr.png`);await del(`outdoor/${ev}/${oid}-author.html`);await del(`outdoor/${ev}/${oid}.mind`);toast("Объект удалён");openEvent(ev);}catch(e){toast(e.message,"err");}
   hideOv();
 }
