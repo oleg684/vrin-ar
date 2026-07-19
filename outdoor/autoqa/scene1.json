@@ -32,5 +32,6 @@
   "audio": "assets/scene1__audio_____.wav",
   "audioName": "фон.wav",
   "audioLoop": true,
-  "audioVolume": 0.8
+  "audioVolume": 0.8,
+  "anchorMind": "scene1.mind"
 }
