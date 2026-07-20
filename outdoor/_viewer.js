@@ -110,6 +110,40 @@ function makeVideo(src, loop, sound){
   return v;
 }
 
+
+// ── Жесты зрителя: 1 палец — вращение, 2 пальца — перемещение + масштаб ──
+function attachGestures(target){
+  let lt=null, lm=null, lp=null;
+  const mid=t=>({x:(t[0].clientX+t[1].clientX)/2,y:(t[0].clientY+t[1].clientY)/2});
+  const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
+  document.addEventListener("touchstart",e=>{
+    if(e.target.closest("#mute-btn,#tap-gate"))return;
+    if(e.touches.length===1){lt={x:e.touches[0].clientX,y:e.touches[0].clientY};lm=null;lp=null;}
+    else if(e.touches.length===2){lt=null;lm=mid(e.touches);lp=dist(e.touches);}
+  },{passive:false});
+  document.addEventListener("touchmove",e=>{
+    if(e.target.closest("#mute-btn"))return;
+    e.preventDefault();
+    if(e.touches.length===1&&lt){
+      target.rotation.y+=(e.touches[0].clientX-lt.x)*0.01;
+      target.rotation.x+=(e.touches[0].clientY-lt.y)*0.01;
+      lt={x:e.touches[0].clientX,y:e.touches[0].clientY};
+    } else if(e.touches.length===2){
+      const m=mid(e.touches), d=dist(e.touches);
+      if(lm){
+        target.position.x+=(m.x-lm.x)/window.innerWidth*2;
+        target.position.y-=(m.y-lm.y)/window.innerHeight*2;
+      }
+      if(lp) target.scale.multiplyScalar(d/lp);
+      lm=m; lp=d;
+    }
+  },{passive:false});
+  document.addEventListener("touchend",e=>{
+    if(e.touches.length===0){lt=null;lm=null;lp=null;}
+    else if(e.touches.length===1){lt={x:e.touches[0].clientX,y:e.touches[0].clientY};lm=null;lp=null;}
+  },{passive:false});
+}
+
 async function startCamera() {
   const video = document.createElement("video");
   video.setAttribute("playsinline",""); video.muted = true; video.playsInline = true;
@@ -207,18 +241,8 @@ async function initWorld(cfg) {
     }
   }
 
-  if (cfg.interactive) {
-    let lt=null,lp=null;
-    document.addEventListener("touchstart",e=>{
-      if(e.touches.length===1){lt={x:e.touches[0].clientX,y:e.touches[0].clientY};lp=null;}
-      else if(e.touches.length===2){const dx=e.touches[0].clientX-e.touches[1].clientX,dy=e.touches[0].clientY-e.touches[1].clientY;lp=Math.hypot(dx,dy);lt=null;}
-    },{passive:false});
-    document.addEventListener("touchmove",e=>{
-      if(e.touches.length===1&&lt){group.rotation.y+=(e.touches[0].clientX-lt.x)*0.01;group.rotation.x+=(e.touches[0].clientY-lt.y)*0.01;lt={x:e.touches[0].clientX,y:e.touches[0].clientY};}
-      else if(e.touches.length===2&&lp){const dx=e.touches[0].clientX-e.touches[1].clientX,dy=e.touches[0].clientY-e.touches[1].clientY;const d=Math.hypot(dx,dy);group.scale.multiplyScalar(d/lp);lp=d;}
-    },{passive:false});
-    document.addEventListener("touchend",e=>{if(e.touches.length===0){lt=null;lp=null;}},{passive:false});
-  }
+  if (cfg.interactive) attachGestures(group);
+
 
   addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
   renderer.setAnimationLoop(()=>{updateGifTextures();renderer.render(scene,camera);});
@@ -247,6 +271,9 @@ async function initImage(cfg) {
   scene.add(new THREE.HemisphereLight(0xffffff,0x444444,1.5));
   const dir=new THREE.DirectionalLight(0xffffff,1); dir.position.set(1,1,1); scene.add(dir);
   const anchor = mindar.addAnchor(0);
+  const contentGroup = new THREE.Group();
+  anchor.group.add(contentGroup);
+  if (cfg.interactive) attachGestures(contentGroup);
   const draco = new DRACOLoader(); draco.setDecoderPath("https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/");
   const loader = new GLTFLoader(); loader.setDRACOLoader(draco);
 
@@ -261,7 +288,7 @@ async function initImage(cfg) {
         const p=item.position||{x:0,y:0,z:0}; wrap.position.set(p.x,p.y,p.z);
         wrap.scale.setScalar(item.scale||0.5);
         if(item.rotationY) wrap.rotation.y = THREE.MathUtils.degToRad(item.rotationY);
-        anchor.group.add(wrap);
+        contentGroup.add(wrap);
       } catch(e){ console.log(e.message); }
     } else {
       let tex, plane;
@@ -273,7 +300,7 @@ async function initImage(cfg) {
       plane=new THREE.Mesh(new THREE.PlaneGeometry(1,1), new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide,transparent:true,opacity:item.opacity ?? 1}));
       const p=item.position||{x:0,y:0,z:0}; plane.position.set(p.x,p.y,p.z); plane.scale.setScalar(item.scale||1);
       if(item.rotationY) plane.rotation.y = THREE.MathUtils.degToRad(item.rotationY);
-      anchor.group.add(plane);
+      contentGroup.add(plane);
     }
   }
   anchor.onTargetFound=()=>{setStatus("");startObjAudio();};
