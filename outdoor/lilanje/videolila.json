@@ -8,7 +8,8 @@
       "src": "assets/videolila__IMG_5556.MOV",
       "name": "IMG_5556.MOV",
       "mode": "plane",
-      "loop": true
+      "loop": true,
+      "opacity": 0.95
     }
   ],
   "interactive": true
