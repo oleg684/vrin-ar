@@ -88,7 +88,10 @@ function tapGate() {
     const g = document.createElement("div");
     g.style.cssText = "position:fixed;inset:0;z-index:500;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-family:sans-serif;gap:1rem;cursor:pointer;";
     g.innerHTML = '<div style="font-size:48px;">▶️</div><div style="font-size:16px;">Нажмите, чтобы запустить AR</div>';
-    g.addEventListener("click", () => { g.remove(); resolve(); }, { once:true });
+    g.id = "tap-gate";
+    const go = () => { g.remove(); resolve(); };
+    g.addEventListener("click", go, { once:true });
+    g.addEventListener("touchend", (e) => { e.preventDefault(); go(); }, { once:true });
     document.body.appendChild(g);
   });
 }
