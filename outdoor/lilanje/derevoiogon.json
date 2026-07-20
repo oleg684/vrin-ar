@@ -8,11 +8,13 @@
       "src": "assets/derevoiogon__derevo1.glb",
       "name": "derevo1.glb",
       "position": {
-        "x": 0,
-        "y": 0,
-        "z": -3
+        "x": -1.5,
+        "y": 2.54,
+        "z": -5
       },
-      "scale": 1
+      "scale": 0.2,
+      "rotationY": 0,
+      "opacity": 1
     }
   ],
   "interactive": false
