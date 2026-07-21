@@ -24,26 +24,58 @@ jobs:
       - name: Install deps
         run: |
           npm install puppeteer
-          pip install pillow
+          pip install pillow qrcode
 
-      - name: Determine anchor source
-        id: src
+      - name: Determine anchor source (with retries)
         run: |
           python3 - << 'PYEOF'
-          import json, os
-          obj = "${{ github.event.inputs.object }}".strip()  # event/objectid
+          import json, os, subprocess, time
+          obj = "${{ github.event.inputs.object }}".strip()
           ev, oid = obj.split("/", 1)
           cfg_path = f"outdoor/{ev}/{oid}.json"
-          with open(cfg_path) as f:
-              cfg = json.load(f)
-          # Источник якоря: QR или загруженная картинка
-          if cfg.get("useQrAsAnchor"):
-              src = f"outdoor/{ev}/{oid}.qr.png"
-          elif cfg.get("anchorImage"):
-              src = f"outdoor/{ev}/{cfg['anchorImage']}"
-          else:
-              print("Нет источника якоря"); exit(1)
-          with open("/tmp/anchor_info.txt","w") as f:
+
+          src = None
+          for attempt in range(6):
+              # подтягиваем свежий main (конфиг мог быть закоммичен позже старта)
+              subprocess.run(["git", "fetch", "origin", "main"], check=False)
+              subprocess.run(["git", "reset", "--hard", "origin/main"], check=False)
+              if not os.path.exists(cfg_path):
+                  print(f"Попытка {attempt+1}: {cfg_path} не найден, жду...")
+                  time.sleep(10); continue
+              with open(cfg_path) as f:
+                  cfg = json.load(f)
+              if cfg.get("useQrAsAnchor"):
+                  src = f"outdoor/{ev}/{oid}.qr.png"
+                  if not os.path.exists(src):
+                      # QR не сгенерирован пользователем — делаем сами
+                      import qrcode
+                      from PIL import Image, ImageDraw
+                      qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_H, box_size=8, border=2)
+                      qr.add_data(f"https://ar.vr-in.net/outdoor/{ev}/{oid}.html")
+                      qr.make()
+                      img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
+                      w, h = img.size
+                      canvas = Image.new("RGB", (w+48, h+64), "white")
+                      canvas.paste(img, (24, 16))
+                      d = ImageDraw.Draw(canvas)
+                      d.text((canvas.width//2-60, h+28), "Work with Internet", fill="black")
+                      canvas.save(src)
+                      print(f"QR не было — сгенерирован: {src}")
+                  break
+              elif cfg.get("anchorImage"):
+                  src = f"outdoor/{ev}/{cfg['anchorImage']}"
+                  if not os.path.exists(src):
+                      print(f"Попытка {attempt+1}: {src} ещё не в main, жду...")
+                      src = None; time.sleep(10); continue
+                  break
+              else:
+                  print(f"Попытка {attempt+1}: в конфиге нет useQrAsAnchor/anchorImage, жду свежий коммит...")
+                  time.sleep(10)
+
+          if not src:
+              print("::error::Источник якоря не найден после 6 попыток. Проверьте: включён ли 'QR как якорь' или загружена ли картинка-якорь, и сохранена ли сцена.")
+              exit(1)
+          with open("/tmp/anchor_info.txt", "w") as f:
               f.write(f"{ev}\n{oid}\n{src}")
           print("Anchor source:", src)
           PYEOF
@@ -70,6 +102,7 @@ jobs:
             const client=await page.target().createCDPSession();
             await client.send('Browser.setDownloadBehavior',{behavior:'allow',downloadPath:'/tmp/out'});
             fs.mkdirSync('/tmp/out',{recursive:true});
+            try{fs.unlinkSync('/tmp/out/targets.mind');}catch(e){}
             page.on('console',m=>{if(!m.text().match(/GL|GPU|WebGL/))console.log(m.text());});
             await page.goto('https://hiukim.github.io/mind-ar-js-doc/tools/compile',{waitUntil:'networkidle2'});
             const input=await page.$('input[type="file"]');
@@ -104,8 +137,10 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          LINES=$(cat /tmp/anchor_info.txt)
+          EV=$(echo "$LINES" | sed -n 1p); OID=$(echo "$LINES" | sed -n 2p)
           mkdir -p /tmp/generated
-          for f in outdoor/*/*.mind outdoor/*/*.json; do
+          for f in "outdoor/$EV/$OID.mind" "outdoor/$EV/$OID.json" "outdoor/$EV/$OID.qr.png"; do
             [ -f "$f" ] || continue
             mkdir -p "/tmp/generated/$(dirname "$f")"; cp "$f" "/tmp/generated/$f"
           done
@@ -114,14 +149,12 @@ jobs:
             git reset --hard origin/main
             git clean -fd
             CHANGED=0
-            LINES=$(cat /tmp/anchor_info.txt)
-            EV=$(echo "$LINES" | sed -n 1p); OID=$(echo "$LINES" | sed -n 2p)
-            for f in "outdoor/$EV/$OID.mind" "outdoor/$EV/$OID.json"; do
+            for f in "outdoor/$EV/$OID.mind" "outdoor/$EV/$OID.json" "outdoor/$EV/$OID.qr.png"; do
               [ -f "/tmp/generated/$f" ] || continue
               mkdir -p "$(dirname "$f")"; cp "/tmp/generated/$f" "$f"; git add "$f"; CHANGED=1
             done
             if [ "$CHANGED" = "0" ] || git diff --staged --quiet; then echo "Nothing"; exit 0; fi
-            git commit -m "Compile anchor [skip ci]"
+            git commit -m "Compile anchor $EV/$OID [skip ci]"
             if git push origin main; then echo "Pushed"; exit 0; fi
             sleep $((i*5))
           done
