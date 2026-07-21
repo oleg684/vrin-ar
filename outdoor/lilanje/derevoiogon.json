@@ -15,14 +15,9 @@
       "scale": 0.15,
       "rotationY": 0,
       "opacity": 1
-    },
-    {
-      "type": "image",
-      "src": "assets/derevoiogon__img_5610.png",
-      "name": "IMG_5610.PNG",
-      "mode": "plane",
-      "loop": true
     }
   ],
-  "interactive": true
+  "interactive": true,
+  "anchorImage": "derevoiogon-anchor.jpg",
+  "useQrAsAnchor": false
 }
