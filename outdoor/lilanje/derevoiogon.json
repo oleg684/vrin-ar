@@ -19,5 +19,6 @@
   ],
   "interactive": true,
   "anchorImage": "derevoiogon-anchor.jpg",
-  "useQrAsAnchor": false
+  "useQrAsAnchor": false,
+  "anchorMind": "derevoiogon.mind"
 }
