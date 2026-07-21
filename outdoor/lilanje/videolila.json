@@ -1,7 +1,7 @@
 {
   "id": "videolila",
   "title": "Lilavideo",
-  "displayMode": "overlay",
+  "displayMode": "image",
   "content": [
     {
       "type": "video",
@@ -12,5 +12,7 @@
       "opacity": 0.95
     }
   ],
-  "interactive": true
+  "interactive": true,
+  "anchorImage": "videolila-anchor.jpg",
+  "useQrAsAnchor": false
 }
