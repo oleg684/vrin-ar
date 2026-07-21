@@ -9,7 +9,8 @@
       "name": "IMG_5556.MOV",
       "mode": "plane",
       "loop": true,
-      "opacity": 0.95
+      "opacity": 0.95,
+      "sound": true
     }
   ],
   "interactive": true,
