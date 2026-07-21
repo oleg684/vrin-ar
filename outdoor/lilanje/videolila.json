@@ -14,5 +14,6 @@
   ],
   "interactive": true,
   "anchorImage": "videolila-anchor.jpg",
-  "useQrAsAnchor": false
+  "useQrAsAnchor": false,
+  "anchorMind": "videolila.mind"
 }
