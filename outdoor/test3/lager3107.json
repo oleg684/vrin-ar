@@ -12,5 +12,6 @@
     }
   ],
   "interactive": false,
-  "useQrAsAnchor": true
+  "useQrAsAnchor": true,
+  "anchorMind": "lager3107.mind"
 }
