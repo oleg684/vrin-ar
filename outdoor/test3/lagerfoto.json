@@ -2,6 +2,14 @@
   "id": "lagerfoto",
   "title": "lagerfoto",
   "displayMode": "world",
-  "content": [],
+  "content": [
+    {
+      "type": "video",
+      "src": "assets/lagerfoto__lrgopoprygunchik_s_obschim_foto.mp4",
+      "name": "Лргопопрыгунчик с общим фото.mp4",
+      "mode": "plane",
+      "loop": true
+    }
+  ],
   "interactive": true
 }
