@@ -1,7 +1,7 @@
 {
   "id": "lagerfoto",
   "title": "lagerfoto",
-  "displayMode": "world",
+  "displayMode": "overlay",
   "content": [
     {
       "type": "video",
@@ -9,7 +9,8 @@
       "name": "Лргопопрыгунчик с общим фото.mp4",
       "mode": "fullscreen",
       "loop": true,
-      "sound": true
+      "sound": true,
+      "opacity": 0.5
     }
   ],
   "interactive": true
