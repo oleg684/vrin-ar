@@ -43,5 +43,9 @@
   "audioName": "музыка.wav",
   "audioLoop": true,
   "audioVolume": 0.8,
-  "useQrAsAnchor": true
+  "useQrAsAnchor": true,
+  "gps": {
+    "lat": 44.8176,
+    "lng": 20.4633
+  }
 }
