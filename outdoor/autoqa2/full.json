@@ -1,7 +1,47 @@
 {
   "id": "full",
   "title": "Полный тест",
-  "displayMode": "world",
-  "content": [],
-  "interactive": true
+  "displayMode": "image",
+  "content": [
+    {
+      "type": "model",
+      "src": "assets/full__model.glb",
+      "name": "модель.glb",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": -3
+      },
+      "scale": 1
+    },
+    {
+      "type": "video",
+      "src": "assets/full__rolik.mp4",
+      "name": "ролик.mp4",
+      "mode": "plane",
+      "loop": true,
+      "opacity": 0.45,
+      "sound": true
+    },
+    {
+      "type": "image",
+      "src": "assets/full__foto.png",
+      "name": "фото.png",
+      "mode": "plane",
+      "loop": true
+    },
+    {
+      "type": "image",
+      "src": "assets/full__animaciya.gif",
+      "name": "анимация.gif",
+      "mode": "plane",
+      "loop": true
+    }
+  ],
+  "interactive": true,
+  "audio": "assets/full__audio__muzyka.wav",
+  "audioName": "музыка.wav",
+  "audioLoop": true,
+  "audioVolume": 0.8,
+  "useQrAsAnchor": true
 }
