@@ -6,7 +6,7 @@ on:
       - '*/*/assets/models/raw/*.glb'
 
 concurrency:
-  group: repo-write
+  group: optimize-glb
   cancel-in-progress: false
 
 jobs:
