@@ -8,7 +8,7 @@ on:
         required: true
 
 concurrency:
-  group: repo-write
+  group: anchor-${{ github.event.inputs.object }}
   cancel-in-progress: false
 
 jobs:
