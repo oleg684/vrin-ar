@@ -47,5 +47,6 @@
   "gps": {
     "lat": 44.8176,
     "lng": 20.4633
-  }
+  },
+  "anchorMind": "full.mind"
 }
