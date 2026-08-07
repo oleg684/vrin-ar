@@ -870,7 +870,9 @@ async function deleteObject(ev,oid){
     const dr=await odApi(p,{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"del "+p,sha:d.sha})});
     if(!dr.ok)console.warn("delete failed",p,dr.status);
   }
-  try{await del(`outdoor/${ev}/${oid}.json`);await del(`outdoor/${ev}/${oid}.html`);await del(`outdoor/${ev}/${oid}.qr.png`);await del(`outdoor/${ev}/${oid}-author.html`);await del(`outdoor/${ev}/${oid}.mind`);toast("Объект удалён");openEvent(ev);}catch(e){toast(e.message,"err");}
+  try{await del(`outdoor/${ev}/${oid}.json`);await del(`outdoor/${ev}/${oid}.html`);await del(`outdoor/${ev}/${oid}.qr.png`);await del(`outdoor/${ev}/${oid}-author.html`);await del(`outdoor/${ev}/${oid}.mind`);await del(`outdoor/${ev}/${oid}-anchor.jpg`);
+    // ассеты объекта (префикс oid__)
+    try{const aR=await odApi(`outdoor/${ev}/assets?ref=main&t=`+Date.now());if(aR.ok){const items=await aR.json();for(const it of items){if(it.name.startsWith(oid+"__"))await del(it.path);}}}catch(e){}toast("Объект удалён");openEvent(ev);}catch(e){toast(e.message,"err");}
   hideOv();
 }
 
