@@ -91,7 +91,7 @@
     {
       "id": "scene-mt2ont3s",
       "title": "Маргарита",
-      "target": "",
+      "target": "assets/targets/scene-mt2ont3s.jpg",
       "model": "assets/models/scene-mt2ont3s.glb",
       "position": {
         "x": 0,
