@@ -72,23 +72,6 @@
       }
     },
     {
-      "id": "scene-mt2onrh6",
-      "title": "Максим",
-      "target": "",
-      "model": "",
-      "position": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": 0.06,
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      }
-    },
-    {
       "id": "scene-mt2ont3s",
       "title": "Маргарита",
       "target": "assets/targets/scene-mt2ont3s.jpg",
