@@ -7,7 +7,7 @@
       "id": "scene-mt2onlsu",
       "title": "Сцена 1",
       "target": "",
-      "model": "",
+      "model": "assets/models/scene-mt2onlsu.glb",
       "position": {
         "x": 0,
         "y": 0,
