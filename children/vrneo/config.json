@@ -23,7 +23,7 @@
     {
       "id": "scene-mt2onnam",
       "title": "Матвей",
-      "target": "",
+      "target": "assets/targets/scene-mt2onnam.jpg",
       "model": "assets/models/scene-mt2onnam.glb",
       "position": {
         "x": 0,
