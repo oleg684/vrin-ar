@@ -6,7 +6,7 @@
     {
       "id": "scene-mt2onlsu",
       "title": "Семен",
-      "target": "",
+      "target": "assets/targets/scene-mt2onlsu.jpg",
       "model": "assets/models/scene-mt2onlsu.glb",
       "position": {
         "x": 0,
