@@ -109,7 +109,7 @@
       "id": "scene-mt2ony5o",
       "title": "Кира",
       "target": "assets/targets/scene-mt2ony5o.jpg",
-      "model": "",
+      "model": "assets/models/scene-mt2ony5o.glb",
       "position": {
         "x": 0,
         "y": 0,
