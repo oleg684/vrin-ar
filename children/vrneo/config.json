@@ -108,7 +108,7 @@
     {
       "id": "scene-mt2onwq6",
       "title": "Миша",
-      "target": "",
+      "target": "assets/targets/scene-mt2onwq6.jpg",
       "model": "assets/models/scene-mt2onwq6.glb",
       "position": {
         "x": 0,
