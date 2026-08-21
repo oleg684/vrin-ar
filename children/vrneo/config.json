@@ -40,7 +40,7 @@
     {
       "id": "scene-mt2onon3",
       "title": "Лева",
-      "target": "",
+      "target": "assets/targets/scene-mt2onon3.jpg",
       "model": "assets/models/scene-mt2onon3.glb",
       "position": {
         "x": 0,
