@@ -26,14 +26,14 @@
       "target": "assets/targets/scene-mt2onnam.jpg",
       "model": "assets/models/scene-mt2onnam.glb",
       "position": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 0.14,
+        "y": -0.17,
+        "z": 0.7
       },
-      "scale": 0.06,
+      "scale": 1.75,
       "rotation": {
         "x": 0,
-        "y": 0,
+        "y": -292.8,
         "z": 0
       }
     },
