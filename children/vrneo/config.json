@@ -41,7 +41,7 @@
       "id": "scene-mt2onon3",
       "title": "Лева",
       "target": "",
-      "model": "",
+      "model": "assets/models/scene-mt2onon3.glb",
       "position": {
         "x": 0,
         "y": 0,
