@@ -40,7 +40,7 @@
     {
       "id": "scene-mtr0x620",
       "title": "Сцена 3",
-      "target": "",
+      "target": "assets/targets/scene-mtr0x620.jpg",
       "model": "",
       "position": {
         "x": 0,
