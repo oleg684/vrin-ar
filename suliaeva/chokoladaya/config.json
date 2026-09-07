@@ -26,14 +26,14 @@
       "target": "assets/targets/scene-mtr0x4of.jpg",
       "model": "assets/models/scene-mtr0x4of.glb",
       "position": {
-        "x": 0,
-        "y": 0,
+        "x": 0.32,
+        "y": -0.51,
         "z": 0
       },
-      "scale": 0.06,
+      "scale": 0.13,
       "rotation": {
         "x": 0,
-        "y": 0,
+        "y": -93.3,
         "z": 0
       }
     },
