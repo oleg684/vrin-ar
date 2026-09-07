@@ -18,7 +18,10 @@
         "x": 0,
         "y": 105.9,
         "z": 0
-      }
+      },
+      "audio": "assets/audio/scene-mtr0x343.mp3",
+      "audioLoop": true,
+      "audioVolume": 0.8
     },
     {
       "id": "scene-mtr0x4of",
