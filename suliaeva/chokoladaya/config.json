@@ -43,14 +43,14 @@
       "target": "assets/targets/scene-mtr0x620.jpg",
       "model": "assets/models/scene-mtr0x620.glb",
       "position": {
-        "x": 0,
-        "y": 0,
+        "x": -0.02,
+        "y": 0.06,
         "z": 0
       },
-      "scale": 0.06,
+      "scale": 0.08,
       "rotation": {
         "x": 0,
-        "y": 0,
+        "y": 107.5,
         "z": 0
       }
     }
