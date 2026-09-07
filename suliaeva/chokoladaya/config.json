@@ -7,7 +7,7 @@
       "id": "scene-mtr0x343",
       "title": "Сцена 1",
       "target": "assets/targets/scene-mtr0x343.jpg",
-      "model": "",
+      "model": "assets/models/scene-mtr0x343.glb",
       "position": {
         "x": 0,
         "y": 0,
