@@ -17,5 +17,6 @@
   ],
   "interactive": true,
   "anchorImage": "zlatan-anchor.jpg",
-  "useQrAsAnchor": false
+  "useQrAsAnchor": false,
+  "anchorMind": "zlatan.mind"
 }
