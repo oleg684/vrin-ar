@@ -1,7 +1,21 @@
 {
   "id": "zlatan",
   "title": "3golovi",
-  "displayMode": "world",
-  "content": [],
-  "interactive": true
+  "displayMode": "image",
+  "content": [
+    {
+      "type": "model",
+      "src": "assets/zlatan__zlatan_ar.glb",
+      "name": "zlatan_ar.glb",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": -3
+      },
+      "scale": 1
+    }
+  ],
+  "interactive": true,
+  "anchorImage": "zlatan-anchor.jpg",
+  "useQrAsAnchor": false
 }
