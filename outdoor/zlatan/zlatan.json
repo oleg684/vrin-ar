@@ -8,11 +8,13 @@
       "src": "assets/zlatan__zlatan_ar.glb",
       "name": "zlatan_ar.glb",
       "position": {
-        "x": 0,
-        "y": 0,
+        "x": -0.02,
+        "y": 0.35,
         "z": -3
       },
-      "scale": 1
+      "scale": 0.73,
+      "rotationY": -176.4,
+      "opacity": 1
     }
   ],
   "interactive": true,
