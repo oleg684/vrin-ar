@@ -18,7 +18,10 @@
         "x": 0,
         "y": 0,
         "z": 0
-      }
+      },
+      "audio": "assets/audio/scene-mvwssu80.mp3",
+      "audioLoop": true,
+      "audioVolume": 0.8
     }
   ]
 }
