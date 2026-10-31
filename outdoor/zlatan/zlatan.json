@@ -9,10 +9,12 @@
       "name": "zlatan_ar.glb",
       "position": {
         "x": 0,
-        "y": 0,
+        "y": -0.01,
         "z": -3
       },
-      "scale": 1
+      "scale": 0.86,
+      "rotationY": -165.5,
+      "opacity": 1
     }
   ],
   "interactive": true,
