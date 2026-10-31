@@ -9,16 +9,13 @@
       "name": "zlatan_ar.glb",
       "position": {
         "x": 0,
-        "y": -0.01,
+        "y": 0,
         "z": -3
       },
-      "scale": 0.86,
-      "rotationY": -165.5,
-      "opacity": 1
+      "scale": 1
     }
   ],
   "interactive": true,
   "anchorImage": "zlatan-anchor.jpg",
-  "useQrAsAnchor": false,
-  "anchorMind": "zlatan.mind"
+  "useQrAsAnchor": false
 }
